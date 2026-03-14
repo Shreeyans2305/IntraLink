@@ -7,7 +7,7 @@ import Button from '../../components/ui/Button'
 function LoginPage() {
   const { register, handleSubmit } = useForm({
     defaultValues: {
-      email: 'demo@intralink.local',
+      email: 'demo@intralink.io',
       password: 'demo123',
     },
   })
