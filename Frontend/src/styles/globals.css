@@ -1,0 +1,76 @@
+body {
+  background: var(--bg-page);
+  color: var(--text-primary);
+  font-family: Inter, Segoe UI, Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 180ms ease, color 180ms ease;
+}
+
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+#root {
+  min-height: 100vh;
+}
+
+.page-shell {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+.surface-card {
+  background: var(--bg-surface);
+  border: 1px solid var(--border-subtle);
+  border-radius: 0.75rem;
+}
+
+.app-page {
+  background: var(--bg-page);
+  color: var(--text-primary);
+}
+
+.app-surface {
+  background: var(--bg-surface);
+  border-color: var(--border-subtle);
+  color: var(--text-primary);
+}
+
+.app-muted {
+  background: var(--bg-muted);
+  color: var(--text-secondary);
+}
+
+.app-accent {
+  background: var(--accent-soft);
+  color: var(--accent-primary);
+}
+
+.app-elevated {
+  background: var(--bg-elevated);
+}
+
+html[data-density='compact'] {
+  font-size: 14px;
+}
+
+html[data-density='comfortable'] {
+  font-size: 16px;
+}
+
+html[data-density='spacious'] {
+  font-size: 17px;
+}
+
+html[data-motion='reduced'] * {
+  animation-duration: 1ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 1ms !important;
+  scroll-behavior: auto !important;
+}
+
+:focus-visible {
+  outline: 2px solid color-mix(in srgb, var(--accent-primary) 75%, white 25%);
+  outline-offset: 2px;
+}
