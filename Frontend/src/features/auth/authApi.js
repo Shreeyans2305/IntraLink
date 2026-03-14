@@ -1,30 +1,16 @@
-const wait = (ms) => new Promise((resolve) => setTimeout(resolve, ms))
+import apiClient from '../../services/apiClient'
 
-export async function loginApi({ email }) {
-  await wait(350)
-  const role = email.toLowerCase().includes('admin') ? 'admin' : 'user'
-
-  return {
-    token: 'intralink-demo-token',
-    user: {
-      id: 'u-1',
-      name: email.split('@')[0],
-      email,
-      role,
-    },
-  }
+export async function loginApi(credentials) {
+  const response = await apiClient.post('/auth/login', credentials)
+  return response.data
 }
 
-export async function registerApi({ name, email }) {
-  await wait(450)
+export async function registerApi(payload) {
+  const response = await apiClient.post('/auth/register', payload)
+  return response.data
+}
 
-  return {
-    token: 'intralink-demo-token',
-    user: {
-      id: 'u-new',
-      name,
-      email,
-      role: 'user',
-    },
-  }
+export async function getMeApi() {
+  const response = await apiClient.get('/auth/me')
+  return response.data
 }
