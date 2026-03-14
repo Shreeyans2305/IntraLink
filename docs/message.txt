@@ -1,0 +1,108 @@
+intralink-backend/
+├── main.py                        # FastAPI app entry point, lifespan events
+├── .env                           # DB URI, JWT secret, MinIO config, seed admin creds
+├── requirements.txt
+│
+├── app/
+│   │
+│   ├── core/                      # App-wide config and cross-cutting concerns
+│   │   ├── config.py              # Settings loaded from .env (pydantic BaseSettings)
+│   │   ├── security.py            # JWT encode/decode, bcrypt hashing
+│   │   ├── dependencies.py        # FastAPI Depends() — get_current_user, require_role
+│   │   └── exceptions.py          # Custom HTTPException subclasses
+│   │
+│   ├── db/                        # Database layer
+│   │   ├── client.py              # Motor async client + Beanie init
+│   │   └── init_db.py             # First-boot seeding (Super Admin, system_config doc)
+│   │
+│   ├── models/                    # Beanie ODM documents (one file per collection)
+│   │   ├── user.py                # users collection
+│   │   ├── room.py                # rooms collection
+│   │   ├── message.py             # messages collection
+│   │   ├── poll.py                # polls collection
+│   │   ├── file.py                # files collection
+│   │   ├── whisper.py             # whispers collection
+│   │   ├── rate_limit.py          # rate_limit_windows collection
+│   │   ├── token_blacklist.py     # token_blacklist collection (TTL index)
+│   │   ├── audit_log.py           # audit_log collection (append-only)
+│   │   └── system_config.py       # system_config collection (lockdown state)
+│   │
+│   ├── schemas/                   # Pydantic request/response shapes (not DB models)
+│   │   ├── auth.py                # RegisterRequest, LoginRequest, TokenResponse
+│   │   ├── user.py                # UserOut, UserUpdate
+│   │   ├── room.py                # RoomCreate, RoomOut, RoomUpdate
+│   │   ├── message.py             # MessageOut, MessageCreate
+│   │   ├── poll.py                # PollCreate, PollOut, VoteIn
+│   │   ├── file.py                # FileOut, PresignedUrlResponse
+│   │   ├── whisper.py             # WhisperOut
+│   │   ├── admin.py               # StatsOut, AuditLogOut, LockdownToggle
+│   │   └── migration.py           # ExportResponse, ImportRequest
+│   │
+│   ├── routers/                   # FastAPI route handlers (one file per domain)
+│   │   ├── auth.py                # /api/auth/*
+│   │   ├── rooms.py               # /api/rooms/*
+│   │   ├── messages.py            # /api/rooms/{id}/messages, /api/messages/{id}
+│   │   ├── polls.py               # /api/rooms/{id}/polls, /api/polls/*
+│   │   ├── files.py               # /api/rooms/{id}/files, /api/files/*
+│   │   ├── whispers.py            # /api/whispers/*
+│   │   └── admin.py               # /api/admin/*
+│   │
+│   ├── websocket/                 # WebSocket connection management
+│   │   ├── manager.py             # ConnectionManager — room registry, broadcast
+│   │   ├── handler.py             # Route: WS /ws/{room_id} — event dispatcher
+│   │   ├── events.py              # Typed WS event models (message, typing, poll_update…)
+│   │   └── typing_store.py        # In-memory typing state dict per room
+│   │
+│   ├── services/                  # Business logic, called by routers
+│   │   ├── auth_service.py        # Register, login, token refresh, logout
+│   │   ├── room_service.py        # Create, archive, membership
+│   │   ├── message_service.py     # Save, paginate, soft-delete, full-text search
+│   │   ├── poll_service.py        # Create, vote, close, broadcast results
+│   │   ├── file_service.py        # MinIO upload, pre-signed URL generation
+│   │   ├── whisper_service.py     # Private message routing + storage
+│   │   ├── spam_service.py        # Smart spam detection logic
+│   │   ├── temp_room_service.py   # Expiry scheduling, archival
+│   │   ├── migration_service.py   # AES-256 export/import bundle
+│   │   └── audit_service.py       # Append audit log entries
+│   │
+│   ├── commands/                  # Slash-command parser and handlers
+│   │   ├── parser.py              # Tokenise and route /command strings
+│   │   ├── registry.py            # Map command names → handler functions
+│   │   └── handlers/
+│   │       ├── help.py            # /help
+│   │       ├── kick.py            # /kick
+│   │       ├── mute.py            # /mute
+│   │       ├── pin.py             # /pin
+│   │       ├── poll.py            # /poll
+│   │       ├── whisper.py         # /whisper
+│   │       ├── room.py            # /room create, /room temp
+│   │       ├── lockdown.py        # /lockdown
+│   │       └── export.py          # /export
+│   │
+│   ├── middleware/                # ASGI middleware
+│   │   ├── rate_limiter.py        # Sliding window using rate_limit_windows collection
+│   │   ├── lockdown.py            # Reads system_config; blocks requests when active
+│   │   └── audit_middleware.py    # Auto-logs sensitive HTTP actions
+│   │
+│   ├── background/                # Async background tasks
+│   │   ├── scheduler.py           # APScheduler setup
+│   │   ├── temp_room_expiry.py    # Poll DB for expiring rooms, archive them
+│   │   └── db_backup.py           # Trigger daily mongodump backup
+│   │
+│   └── utils/
+│       ├── encryption.py          # AES-256-GCM encrypt/decrypt (migration bundles)
+│       ├── pagination.py          # Cursor-based pagination helpers
+│       ├── validators.py          # Input sanitisation helpers
+│       └── time.py                # UTC helpers, expiry calculators
+│
+└── tests/
+    ├── conftest.py                # Fixtures: test DB, test client, mock users
+    ├── test_auth.py
+    ├── test_rooms.py
+    ├── test_messaging.py
+    ├── test_websocket.py
+    ├── test_commands.py
+    ├── test_polls.py
+    ├── test_files.py
+    ├── test_admin.py
+    └── test_migration.py
