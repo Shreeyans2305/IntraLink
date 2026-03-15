@@ -67,3 +67,101 @@ input:focus, select:focus, textarea:focus {
 ::-webkit-scrollbar-thumb:hover {
   background: var(--accent-primary);
 }
+
+@keyframes intralinkLogoFloatSpin {
+  0% {
+    transform: translateY(0) rotateX(10deg) rotateY(0deg) rotateZ(-2deg) scale(1);
+  }
+  25% {
+    transform: translateY(-6px) rotateX(12deg) rotateY(90deg) rotateZ(1deg) scale(1.03);
+  }
+  50% {
+    transform: translateY(0) rotateX(8deg) rotateY(180deg) rotateZ(0deg) scale(1);
+  }
+  75% {
+    transform: translateY(-5px) rotateX(12deg) rotateY(270deg) rotateZ(-1deg) scale(1.03);
+  }
+  100% {
+    transform: translateY(0) rotateX(10deg) rotateY(360deg) rotateZ(-2deg) scale(1);
+  }
+}
+
+@keyframes intralinkLogoGlow {
+  0%,
+  100% {
+    filter: drop-shadow(0 0 0 rgba(56, 189, 248, 0.25)) drop-shadow(0 0 10px rgba(37, 99, 235, 0.25));
+  }
+  50% {
+    filter: drop-shadow(0 0 14px rgba(56, 189, 248, 0.6)) drop-shadow(0 0 30px rgba(59, 130, 246, 0.65));
+  }
+}
+
+@keyframes intralinkLoadingDot {
+  0%,
+  20%,
+  100% {
+    opacity: 0.2;
+    transform: translateY(0);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes intralinkLoadingBar {
+  0% {
+    transform: translateX(-65%) scaleX(0.4);
+    opacity: 0.35;
+  }
+  50% {
+    transform: translateX(0%) scaleX(0.75);
+    opacity: 0.9;
+  }
+  100% {
+    transform: translateX(65%) scaleX(0.4);
+    opacity: 0.35;
+  }
+}
+
+.loading-logo-orbit {
+  perspective: 900px;
+}
+
+.loading-logo-3d {
+  transform-style: preserve-3d;
+  animation: intralinkLogoFloatSpin 5.4s ease-in-out infinite, intralinkLogoGlow 2.8s ease-in-out infinite;
+  will-change: transform, filter;
+}
+
+.loading-dots {
+  display: inline-flex;
+  width: 1.2em;
+  justify-content: space-between;
+  margin-left: 0.2em;
+}
+
+.loading-dots span {
+  animation: intralinkLoadingDot 1.2s ease-in-out infinite;
+}
+
+.loading-dots span:nth-child(2) {
+  animation-delay: 0.2s;
+}
+
+.loading-dots span:nth-child(3) {
+  animation-delay: 0.4s;
+}
+
+.loading-progress-bar {
+  transform-origin: center;
+  animation: intralinkLoadingBar 2.1s ease-in-out infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .loading-logo-3d,
+  .loading-dots span,
+  .loading-progress-bar {
+    animation: none !important;
+  }
+}

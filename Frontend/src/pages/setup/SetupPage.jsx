@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import apiClient from '../../services/apiClient'
+import LoadingScreen from '../../components/ui/LoadingScreen'
 
 function SetupPage() {
   const navigate = useNavigate()
@@ -45,7 +46,10 @@ function SetupPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-4 py-8">
+    <>
+      <LoadingScreen isLoading={loading} loadingText="Setting up your workspace" />
+
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950 px-4 py-8">
       {/* Dynamic Background Elements */}
       <div className="absolute -top-40 -left-40 h-[600px] w-[600px] rounded-full bg-brand-600 opacity-20 blur-[120px] mix-blend-screen animate-pulse"></div>
       <div className="absolute -bottom-40 -right-40 h-[700px] w-[700px] rounded-full bg-blue-600 opacity-20 blur-[130px] mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -57,7 +61,7 @@ function SetupPage() {
       >
         <header className="mb-6 text-center">
           <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl shadow-[0_0_30px_rgba(59,130,246,0.4)]">
-            <img src="/LOGO.webp" alt="IntraLink" className="h-20 w-20 rounded-2xl object-cover" />
+            <img src="/logo.webp" alt="IntraLink" className="h-20 w-20 rounded-2xl object-cover" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Initialize Workspace</h1>
           <p className="mt-2 text-sm text-zinc-400">
@@ -191,7 +195,8 @@ function SetupPage() {
           <div className="absolute inset-0 -translate-x-full bg-gradient-to-r from-transparent via-white/20 to-transparent transition-transform duration-1000 group-hover:translate-x-full"></div>
         </button>
       </form>
-    </main>
+      </main>
+    </>
   )
 }
 

@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { useForm } from 'react-hook-form'
 import { Link } from 'react-router-dom'
 import { useAuth } from '../../features/auth/useAuth'
+import LoadingScreen from '../../components/ui/LoadingScreen'
 
 function RegisterPage() {
   const { register: formRegister, handleSubmit } = useForm({
@@ -28,7 +29,10 @@ function RegisterPage() {
   }
 
   return (
-    <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950">
+    <>
+      <LoadingScreen isLoading={loading} loadingText="Creating your account" />
+
+      <main className="relative flex min-h-screen items-center justify-center overflow-hidden bg-zinc-950">
       {/* Dynamic Background Elements */}
       <div className="absolute -top-40 -left-40 h-[500px] w-[500px] rounded-full bg-brand-500 opacity-20 blur-[100px] mix-blend-screen animate-pulse"></div>
       <div className="absolute -bottom-40 -right-40 h-[600px] w-[600px] rounded-full bg-blue-600 opacity-20 blur-[120px] mix-blend-screen animate-pulse" style={{ animationDelay: '2s' }}></div>
@@ -40,7 +44,7 @@ function RegisterPage() {
       >
         <header className="mb-2 text-center">
           <div className="mx-auto mb-4 flex h-20 w-20 items-center justify-center rounded-2xl shadow-[0_0_20px_rgba(59,130,246,0.35)]">
-            <img src="/LOGO.webp" alt="IntraLink" className="h-20 w-20 rounded-2xl object-cover" />
+            <img src="/logo.webp" alt="IntraLink" className="h-20 w-20 rounded-2xl object-cover" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-white">Join IntraLink</h1>
           <p className="mt-2 text-sm text-zinc-400">
@@ -100,7 +104,8 @@ function RegisterPage() {
           </Link>
         </p>
       </form>
-    </main>
+      </main>
+    </>
   )
 }
 

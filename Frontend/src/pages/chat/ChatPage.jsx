@@ -21,6 +21,7 @@ import RoomExpiredBanner from '../../components/temprooms/RoomExpiredBanner'
 import TempRoomBadge from '../../components/temprooms/TempRoomBadge'
 import ThreadPanel from '../../components/threads/ThreadPanel'
 import EmptyState from '../../components/ui/EmptyState'
+import LoadingScreen from '../../components/ui/LoadingScreen'
 import ShortcutModal from '../../components/ui/ShortcutModal'
 import SkeletonBlock from '../../components/ui/SkeletonBlock'
 import Toast from '../../components/ui/Toast'
@@ -147,6 +148,7 @@ function ChatPage() {
   const [showCreateRoom, setShowCreateRoom] = useState(false)
   const [showManageMembers, setShowManageMembers] = useState(false)
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
+  const [isChatBootstrapping, setIsChatBootstrapping] = useState(true)
   const [draggedRoomId, setDraggedRoomId] = useState(null)
   const [roomOrder, setRoomOrder] = useState(() =>
     rooms.filter((room) => room.type !== 'temporary').map((room) => room.id),
@@ -158,13 +160,22 @@ function ChatPage() {
 
   useEffect(() => {
     async function load() {
-      if (user) {
-        const data = await fetchRooms()
-        const tempData = await listTempRoomsApi()
+      if (!user) {
+        setIsChatBootstrapping(false)
+        return
+      }
+
+      setIsChatBootstrapping(true)
+
+      try {
+        const [data, tempData] = await Promise.all([fetchRooms(), listTempRoomsApi()])
         dispatch(setRooms(data))
         dispatch(setTempRooms(tempData))
+      } finally {
+        setIsChatBootstrapping(false)
       }
     }
+
     load()
   }, [user, dispatch])
 
@@ -894,9 +905,14 @@ function ChatPage() {
 
   return (
     <div className="app-page bg-zinc-950 text-zinc-200 relative flex h-screen flex-col">
+      <LoadingScreen isLoading={isChatBootstrapping} loadingText="Connecting to chat" />
+
       <header className="app-surface bg-zinc-900/20 flex items-center justify-between border-b border-zinc-800/80 px-4 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-bold tracking-tight text-zinc-100 text-shadow-sm shadow-brand-500/20">IntraLink</h1>
+          <div className="flex items-center gap-2 rounded-xl border border-zinc-800/70 bg-zinc-900/40 px-2.5 py-1.5">
+            <img src="/logo.webp" alt="IntraLink" className="h-7 w-7 rounded-lg object-cover" />
+            <h1 className="text-lg font-bold tracking-tight text-zinc-100 text-shadow-sm shadow-brand-500/20">IntraLink</h1>
+          </div>
           <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-sm text-zinc-400 focus-within:border-brand-500/50 focus-within:ring-1 focus-within:ring-brand-500/50 transition-all">
             <Search size={14} className="text-zinc-500" />
             <input

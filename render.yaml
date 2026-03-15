@@ -1,0 +1,22 @@
+services:
+  - type: web
+    name: intralink-api
+    env: python
+    rootDir: backend
+    plan: starter
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:socket_app --host 0.0.0.0 --port $PORT
+    healthCheckPath: /health
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.11.11
+      - key: USE_MOCK_DB
+        value: "false"
+      - key: MONGO_URL
+        sync: false
+      - key: MONGO_DB
+        value: intralink
+      - key: SECRET_KEY
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false

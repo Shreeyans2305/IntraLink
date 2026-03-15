@@ -4,6 +4,7 @@ import { useNavigate, useLocation } from 'react-router-dom'
 import { selectUserPreferences } from './features/auth/authSlice'
 import AppRouter from './routes/AppRouter'
 import apiClient from './services/apiClient'
+import LoadingScreen from './components/ui/LoadingScreen'
 
 function App() {
   const preferences = useSelector(selectUserPreferences)
@@ -32,7 +33,9 @@ function App() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []) // Empty deps so it only runs once
 
-  if (checking) return null
+  if (checking) {
+    return <LoadingScreen isLoading loadingText="Preparing workspace" />
+  }
 
   return <AppRouter />
 }
