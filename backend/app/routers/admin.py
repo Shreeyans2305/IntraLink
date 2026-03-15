@@ -306,9 +306,13 @@ async def import_blueprint(
         for member in room_data.get("members", []):
             user = await users_col().find_one({"email": member["email"]})
             if user:
+                role = member.get("room_role", "user")
+                if role == "room_supervisor":
+                    role = "room_manager"
+                    
                 room_doc["members"].append({
                     "user_id": str(user["_id"]),
-                    "room_role": member.get("room_role", "user"),
+                    "room_role": role,
                     "muted": False,
                 })
         await rooms_col().insert_one(room_doc)
@@ -320,9 +324,13 @@ async def import_blueprint(
         email = whitelist_entry["email"].lower()
         existing_user = await users_col().find_one({"email": email})
         if not existing_user:
+            wl_role = whitelist_entry.get("org_role", "user")
+            if wl_role == "room_supervisor":
+                wl_role = "room_manager"
+                
             await whitelists_col().update_one(
                 {"email": email},
-                {"$set": {"email": email, "org_role": whitelist_entry.get("org_role", "user"), "added_by": current_user["id"], "added_at": now}},
+                {"$set": {"email": email, "org_role": wl_role, "added_by": current_user["id"], "added_at": now}},
                 upsert=True,
             )
             restored_whitelists += 1

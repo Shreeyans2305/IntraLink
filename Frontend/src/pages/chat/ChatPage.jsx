@@ -52,13 +52,13 @@ import { setCustomStatus, selectPresence, setStatus } from '../../features/prese
 import { selectPolls, votePoll, createPoll } from '../../features/polls/pollSlice'
 import { selectReactionsByMessage } from '../../features/reactions/reactionSlice'
 import { closeThread, openThread, selectThreadState } from '../../features/threads/threadSlice'
-import { createTempRoom, selectTempRooms } from '../../features/temprooms/tempRoomSlice'
+import { createTempRoom, selectTempRooms, setTempRooms } from '../../features/temprooms/tempRoomSlice'
 import { useRoomTimer } from '../../features/temprooms/useRoomTimer'
 import { setTempRoomMetric } from '../../features/admin/adminSlice'
 import { usePresenceSync } from '../../hooks/usePresenceSync'
 import { usePushNotif } from '../../hooks/usePushNotif'
 import { fetchRooms, fetchMessages, createRoom, joinRoom } from '../../features/messaging/messagingApi'
-import { createTemporaryRoomApi } from '../../features/temprooms/tempRoomApi'
+import { createTemporaryRoomApi, listTempRoomsApi } from '../../features/temprooms/tempRoomApi'
 import { useMessagingSocket } from '../../hooks/useMessagingSocket'
 
 function reorderIds(list, draggedId, targetId) {
@@ -157,7 +157,9 @@ function ChatPage() {
     async function load() {
       if (user) {
         const data = await fetchRooms()
+        const tempData = await listTempRoomsApi()
         dispatch(setRooms(data))
+        dispatch(setTempRooms(tempData))
       }
     }
     load()
@@ -549,7 +551,9 @@ function ChatPage() {
         )
         // Refetch full room list
         const latestRooms = await fetchRooms()
+        const latestTemps = await listTempRoomsApi()
         dispatch(setRooms(latestRooms))
+        dispatch(setTempRooms(latestTemps))
       } catch (err) {
         setToast({ type: 'error', message: err.response?.data?.detail || 'Failed to create temp room' })
       }
@@ -1298,6 +1302,17 @@ function ChatPage() {
         ) : null}
       </div>
 
+      <CreateRoomModal open={showCreateRoom} onClose={() => setShowCreateRoom(false)} />
+      <ManageMembersModal 
+        open={showManageMembers} 
+        onClose={() => setShowManageMembers(false)}
+        room={currentRoom}
+        currentUser={user}
+        onMembersChanged={async () => {
+          const freshRooms = await fetchRooms()
+          dispatch(setRooms(freshRooms))
+        }}
+      />
       <PollModal
         open={showPollModal}
         onClose={() => setShowPollModal(false)}

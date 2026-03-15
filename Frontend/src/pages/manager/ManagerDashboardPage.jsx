@@ -4,7 +4,8 @@ import { fetchRooms } from '../../features/messaging/messagingApi'
 import { useAuth } from '../../features/auth/useAuth'
 
 export default function ManagerDashboardPage() {
-  const { user } = useAuth()
+  const { auth } = useAuth()
+  const user = auth?.user
   const { data: rooms = [], isLoading } = useQuery({ queryKey: ['rooms'], queryFn: fetchRooms })
 
   // Find all rooms where this user is either an admin or specifically assigned as a room_manager

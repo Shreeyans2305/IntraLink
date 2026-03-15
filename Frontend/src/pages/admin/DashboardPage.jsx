@@ -1,4 +1,4 @@
-import { useMemo, useState, useEffect } from 'react'
+import { useMemo, useState, useEffect, useRef } from 'react'
 import { Link } from 'react-router-dom'
 import ActivityChart from '../../components/dashboard/ActivityChart'
 import ActivityHeatmap from '../../components/dashboard/ActivityHeatmap'
@@ -82,11 +82,78 @@ function AssignManagerWidget() {
   )
 }
 
+function BlastModal({ open, onClose, onConfirm }) {
+  const [passphrase, setPassphrase] = useState('')
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="w-full max-w-sm rounded-xl border border-red-500/30 bg-slate-900 p-5 shadow-2xl">
+        <h3 className="mb-2 text-lg font-semibold text-white">💥 Blast Org</h3>
+        <p className="mb-4 text-sm text-slate-400">
+          WARNING: This will wipe all messages, rooms, and temp rooms. Enter a strong passphrase to encrypt the org blueprint.
+        </p>
+        <input 
+          type="password"
+          value={passphrase}
+          onChange={e => setPassphrase(e.target.value)}
+          placeholder="Encryption Passphrase"
+          className="mb-4 w-full rounded-md border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:border-red-500 outline-none"
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} className="text-slate-300">Cancel</Button>
+          <Button disabled={!passphrase} onClick={() => onConfirm(passphrase)} className="bg-red-600 hover:bg-red-500 text-white">
+            Wipe & Encrypt
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+function RestoreModal({ open, onClose, onConfirm }) {
+  const [passphrase, setPassphrase] = useState('')
+  const [file, setFile] = useState(null)
+  
+  if (!open) return null
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
+      <div className="w-full max-w-sm rounded-xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">
+        <h3 className="mb-2 text-lg font-semibold text-white">📥 Restore Blueprint</h3>
+        <p className="mb-4 text-sm text-slate-400">
+          Upload your `.inm` blueprint and enter the passphrase used to decrypt it.
+        </p>
+        <input 
+          type="file"
+          accept=".inm"
+          onChange={e => setFile(e.target.files[0])}
+          className="mb-3 w-full text-sm text-slate-300"
+        />
+        <input 
+          type="password"
+          value={passphrase}
+          onChange={e => setPassphrase(e.target.value)}
+          placeholder="Decryption Passphrase"
+          className="mb-4 w-full rounded-md border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 outline-none"
+        />
+        <div className="flex justify-end gap-2">
+          <Button variant="ghost" onClick={onClose} className="text-slate-300">Cancel</Button>
+          <Button disabled={!passphrase || !file} onClick={() => onConfirm(file, passphrase)} className="bg-cyan-600 hover:bg-cyan-500 text-white">
+            Restore
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function DashboardPage() {
   const { metrics, activitySeries, moderationQueue } = useAdmin()
   const [range, setRange] = useState('today')
   const [refreshing, setRefreshing] = useState(false)
   const [lockdownActive, setLockdownActive] = useState(false)
+  
+  const [showBlastModal, setShowBlastModal] = useState(false)
+  const [showRestoreModal, setShowRestoreModal] = useState(false)
 
   // Fetch initial lockdown state
   useEffect(() => {
@@ -104,11 +171,8 @@ function DashboardPage() {
     }
   }
 
-  const handleBlast = async () => {
-    const passphrase = window.prompt("Enter a strong passphrase to encrypt the org blueprint:")
-    if (!passphrase) return
-    if (!window.confirm("WARNING: This will wipe all messages, rooms, and temp rooms. Are you absolutely sure?")) return
-    
+  const handleBlastExecute = async (passphrase) => {
+    setShowBlastModal(false)
     try {
       const response = await apiClient.post('/admin/blast', { passphrase }, { responseType: 'blob' })
       const url = window.URL.createObjectURL(new Blob([response.data]))
@@ -125,40 +189,30 @@ function DashboardPage() {
     }
   }
 
-  const handleRestore = () => {
-    const input = document.createElement('input')
-    input.type = 'file'
-    input.accept = '.inm'
-    input.onchange = async (e) => {
-      const file = e.target.files[0]
-      if (!file) return
-      const passphrase = window.prompt("Enter the passphrase used to encrypt this blueprint:")
-      if (!passphrase) return
-      
-      const reader = new FileReader()
-      reader.onload = async (re) => {
-        // convert array buffer to base64
-        const bytes = new Uint8Array(re.target.result)
-        let binary = ''
-        for (let i = 0; i < bytes.byteLength; i++) {
-          binary += String.fromCharCode(bytes[i])
-        }
-        const base64Data = window.btoa(binary)
-        
-        try {
-          const resp = await apiClient.post('/admin/import-blueprint', {
-            data: base64Data,
-            passphrase
-          })
-          alert(`Restore successful! Created ${resp.data.rooms_created} rooms and restored ${resp.data.whitelists_restored} whitelists.`)
-        } catch (err) {
-          console.error("Restore failed", err)
-          alert("Restore failed. Invalid file or wrong passphrase.")
-        }
+  const handleRestoreExecute = (file, passphrase) => {
+    setShowRestoreModal(false)
+    const reader = new FileReader()
+    reader.onload = async (re) => {
+      // convert array buffer to base64
+      const bytes = new Uint8Array(re.target.result)
+      let binary = ''
+      for (let i = 0; i < bytes.byteLength; i++) {
+        binary += String.fromCharCode(bytes[i])
       }
-      reader.readAsArrayBuffer(file)
+      const base64Data = window.btoa(binary)
+      
+      try {
+        const resp = await apiClient.post('/admin/import-blueprint', {
+          data: base64Data,
+          passphrase
+        })
+        alert(`Restore successful! Created ${resp.data.rooms_created} rooms and restored ${resp.data.whitelists_restored} whitelists.`)
+      } catch (err) {
+        console.error("Restore failed", err)
+        alert("Restore failed. Invalid file or wrong passphrase.")
+      }
     }
-    input.click()
+    reader.readAsArrayBuffer(file)
   }
 
   const scale = {
@@ -321,14 +375,14 @@ function DashboardPage() {
             </div>
             <div className="flex flex-col gap-3">
               <button 
-                onClick={handleBlast}
+                onClick={() => setShowBlastModal(true)}
                 className="rounded-lg border border-red-300 bg-white p-3 text-left transition-colors hover:bg-red-100"
               >
                 <p className="text-sm font-semibold text-red-700">💥 Blast Org</p>
                 <p className="mt-1 text-xs text-red-600">Encrypt everything to blueprint.inm & wipe live data.</p>
               </button>
               <button 
-                onClick={handleRestore}
+                onClick={() => setShowRestoreModal(true)}
                 className="rounded-lg border border-red-300 bg-white p-3 text-left transition-colors hover:bg-red-100"
               >
                 <p className="text-sm font-semibold text-red-700">📥 Restore Blueprint</p>
@@ -359,6 +413,9 @@ function DashboardPage() {
           </div>
         </section>
       </main>
+      
+      <BlastModal open={showBlastModal} onClose={() => setShowBlastModal(false)} onConfirm={handleBlastExecute} />
+      <RestoreModal open={showRestoreModal} onClose={() => setShowRestoreModal(false)} onConfirm={handleRestoreExecute} />
     </div>
   )
 }

@@ -26,22 +26,16 @@ const parseDuration = (duration) => {
 }
 
 const initialState = {
-  rooms: [
-    {
-      id: 'temp-1',
-      roomId: 'room-temp-war',
-      name: 'incident-war-room',
-      createdBy: 'Nina',
-      expiresAt: Date.now() + 1000 * 60 * 55,
-      locked: false,
-    },
-  ],
+  rooms: [],
 }
 
 const tempRoomSlice = createSlice({
   name: 'temprooms',
   initialState,
   reducers: {
+    setTempRooms: (state, action) => {
+      state.rooms = action.payload || []
+    },
     createTempRoom: (state, action) => {
       const { name, createdBy, duration } = action.payload
       const id = `temp-${Date.now()}`
@@ -85,7 +79,7 @@ const tempRoomSlice = createSlice({
   },
 })
 
-export const { createTempRoom, extendTempRoom, terminateTempRoom, expireRooms } =
+export const { createTempRoom, extendTempRoom, terminateTempRoom, expireRooms, setTempRooms } =
   tempRoomSlice.actions
 
 export const selectTempRooms = (state) => state.temprooms.rooms

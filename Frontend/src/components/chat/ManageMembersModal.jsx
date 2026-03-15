@@ -3,7 +3,7 @@ import { X, UserPlus, Shield, UserMinus, MicOff, Mic } from 'lucide-react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { fetchUsers, addRoomMember, kickRoomMember, updateRoomMember, muteMember, unmuteMember } from '../../features/messaging/messagingApi'
 
-export default function ManageMembersModal({ open, onClose, room, currentUser }) {
+export default function ManageMembersModal({ open, onClose, room, currentUser, onMembersChanged }) {
   const queryClient = useQueryClient()
   const [newUserId, setNewUserId] = useState('')
   const [newUserRole, setNewUserRole] = useState('user')
@@ -15,7 +15,10 @@ export default function ManageMembersModal({ open, onClose, room, currentUser })
   })
 
   // Invalidate room data helper
-  const refreshRooms = () => queryClient.invalidateQueries(['rooms'])
+  const refreshRooms = () => {
+    queryClient.invalidateQueries(['rooms'])
+    if (onMembersChanged) onMembersChanged()
+  }
 
   // Mutations
   const addMutation = useMutation({

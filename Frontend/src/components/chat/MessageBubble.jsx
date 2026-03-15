@@ -5,6 +5,7 @@ import EmojiPicker from '../reactions/EmojiPicker'
 import ReactionBar from '../reactions/ReactionBar'
 import UserHoverCard from './UserHoverCard'
 import Button from '../ui/Button'
+import MarkdownText from '../ui/MarkdownText'
 
 function escapeRegExp(value) {
   return value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
@@ -93,9 +94,9 @@ function MessageBubble({
         </div>
       </div>
 
-      <p className={`text-sm ${message.expired ? 'italic text-slate-500' : ''}`}>
-        {highlightText(message.text, searchQuery)}
-      </p>
+      <div className={`text-sm ${message.expired ? 'italic text-slate-500' : ''}`}>
+        <MarkdownText text={message.text} searchQuery={searchQuery} highlightText={highlightText} />
+      </div>
 
       <div className="mt-2 flex items-start justify-between gap-2">
         <div className="flex-1">
