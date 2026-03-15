@@ -32,21 +32,35 @@ async def client():
 
 @pytest_asyncio.fixture
 async def admin_token(client):
-    resp = await client.post("/api/auth/register", json={
-        "name": "Admin User",
-        "email": "admin@test.com",
-        "password": "test1234",
+    """Create org + first admin account via /api/org/setup."""
+    resp = await client.post("/api/org/setup", json={
+        "org_name": "Test Org",
+        "admin_name": "Admin User",
+        "admin_email": "admin@test.com",
+        "admin_password": "test1234",
     })
     assert resp.status_code == 201
     return resp.json()["token"]
 
 
 @pytest_asyncio.fixture
-async def user_token(client):
+async def user_token(client, admin_token):
+    """Whitelist then register a regular user."""
+    # First get the org id
+    org_resp = await client.get("/api/org/")
+    org_id = org_resp.json()["orgs"][0]["id"]
+    
+    invite_resp = await client.post("/api/admin/whitelist", json={
+        "email": "user@test.com",
+        "org_role": "user",
+    }, headers={"Authorization": f"Bearer {admin_token}"})
+    assert invite_resp.status_code == 201
+
     resp = await client.post("/api/auth/register", json={
         "name": "Regular User",
         "email": "user@test.com",
         "password": "test1234",
+        "org_id": org_id,
     })
     assert resp.status_code == 201
     return resp.json()["token"]

@@ -4,9 +4,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 
 from app.core.deps import get_current_user
 from app.core.security import create_access_token, hash_password, verify_password
-from app.db.mongo import audit_col, users_col
+from app.db.mongo import audit_col, whitelists_col, org_col, users_col
 from app.schemas.schemas import LoginRequest, RegisterRequest, TokenResponse
-from app.utils.id_utils import doc_to_dict
+from app.utils.id_utils import doc_to_dict, str_to_oid
 import time
 
 router = APIRouter(prefix="/auth", tags=["auth"])
@@ -31,6 +31,22 @@ async def _write_audit(user_id: str, email: str, action: str):
 
 @router.post("/register", status_code=201)
 async def register(body: RegisterRequest):
+    # Org must exist before any user can self-register. Since it's a single-org platform, auto-assign to the first.
+    org = await org_col().find_one({})
+    if not org:
+        raise HTTPException(
+            status_code=400,
+            detail="No organisation exists. Please complete setup first.",
+        )
+
+    # Email must be on the whitelist for this org
+    whitelist_entry = await whitelists_col().find_one({"email": body.email.lower()})
+    if not whitelist_entry:
+        raise HTTPException(
+            status_code=403,
+            detail="You are not whitelisted for this organisation. Contact your administrator.",
+        )
+
     existing = await users_col().find_one({"email": body.email})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
@@ -39,13 +55,16 @@ async def register(body: RegisterRequest):
         "name": body.name,
         "email": body.email,
         "hashed_password": hash_password(body.password),
-        "org_role": "admin" if "admin" in body.email.lower() else "user",
+        "org_role": whitelist_entry["org_role"],  # role comes from the whitelist
         "status": "Active",
         "custom_status": "",
         "created_at": int(time.time() * 1000),
     }
     result = await users_col().insert_one(doc)
     user_id = str(result.inserted_id)
+
+    # Consume the whitelist entry so it can't be reused
+    await whitelists_col().delete_one({"email": body.email.lower()})
 
     token = create_access_token({"sub": user_id})
     doc["_id"] = result.inserted_id

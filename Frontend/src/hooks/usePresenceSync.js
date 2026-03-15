@@ -10,13 +10,20 @@ export function usePresenceSync() {
     const socket = getSocket()
 
     const handler = (presencePayload) => {
-      dispatch(upsertPresenceUser(presencePayload))
+      dispatch(
+        upsertPresenceUser({
+          id: presencePayload.user_id,
+          name: presencePayload.name,
+          status: presencePayload.status,
+          customStatus: presencePayload.custom_status,
+        }),
+      )
     }
 
-    socket.on('presence:update', handler)
+    socket.on('presence_update', handler)
 
     return () => {
-      socket.off('presence:update', handler)
+      socket.off('presence_update', handler)
     }
   }, [dispatch])
 }

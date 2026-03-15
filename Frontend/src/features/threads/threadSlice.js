@@ -3,22 +3,7 @@ import { createSlice } from '@reduxjs/toolkit'
 const initialState = {
   isOpen: false,
   parentMessage: null,
-  byParent: {
-    'm-1': [
-      {
-        id: 't-1',
-        authorName: 'Omar',
-        text: 'Smoke checks are green in EU region.',
-        timestamp: Date.now() - 1000 * 60 * 5,
-      },
-      {
-        id: 't-2',
-        authorName: 'Nina',
-        text: 'Great. Please verify US region next.',
-        timestamp: Date.now() - 1000 * 60 * 4,
-      },
-    ],
-  },
+  byParent: {},
 }
 
 const threadSlice = createSlice({
@@ -36,23 +21,33 @@ const threadSlice = createSlice({
       state.isOpen = false
       state.parentMessage = null
     },
+    setThreadReplies: (state, action) => {
+      const { parentId, replies } = action.payload
+      state.byParent[parentId] = replies
+    },
     addThreadMessage: (state, action) => {
-      const { parentId, authorName, text } = action.payload
+      const { parentId, reply } = action.payload
+      if (!parentId || !reply) {
+        return
+      }
+
       if (!state.byParent[parentId]) {
         state.byParent[parentId] = []
       }
-      state.byParent[parentId].push({
-        id: `t-${Date.now()}`,
-        authorName,
-        text,
-        timestamp: Date.now(),
-      })
+
+      state.byParent[parentId].push(reply)
+    },
+    receiveThreadReply: (state, action) => {
+      const { parentId, reply } = action.payload
+      if (!state.byParent[parentId]) {
+        state.byParent[parentId] = []
+      }
+      state.byParent[parentId].push(reply)
     },
   },
 })
 
-export const { openThread, closeThread, addThreadMessage } = threadSlice.actions
-
+export const { openThread, closeThread, setThreadReplies, addThreadMessage, receiveThreadReply } = threadSlice.actions
 export const selectThreadState = (state) => state.threads
 
 export default threadSlice.reducer

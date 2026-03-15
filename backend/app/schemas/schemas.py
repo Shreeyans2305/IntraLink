@@ -3,12 +3,27 @@ from typing import Optional, List
 from datetime import datetime
 
 
+# ── Org ───────────────────────────────────────────────────────────────────────
+
+class WhitelistEntryCreate(BaseModel):
+    email: EmailStr
+    org_role: str = "user"  # user | room_manager
+
+class OrgSetup(BaseModel):
+    org_name: str
+    admin_name: str
+    admin_email: EmailStr
+    admin_password: str
+    whitelists: Optional[List[WhitelistEntryCreate]] = []
+
+
 # ── Auth ──────────────────────────────────────────────────────────────────────
 
 class RegisterRequest(BaseModel):
     name: str
     email: EmailStr
     password: str
+    org_id: Optional[str] = None
 
 class LoginRequest(BaseModel):
     email: EmailStr
@@ -28,10 +43,10 @@ class RoomCreate(BaseModel):
 
 class RoomMemberAdd(BaseModel):
     user_id: str
-    room_role: str = "user"  # user | room_supervisor
+    room_role: str = "user"  # user | room_manager
 
 class RoomMemberUpdate(BaseModel):
-    room_role: str  # user | room_supervisor
+    room_role: str  # user | room_manager
 
 
 # ── Messages ─────────────────────────────────────────────────────────────────
@@ -86,7 +101,18 @@ class PresenceUpdate(BaseModel):
 # ── Admin ─────────────────────────────────────────────────────────────────────
 
 class UserRoleUpdate(BaseModel):
-    org_role: str  # user | room_supervisor | admin
+    org_role: str  # user | room_manager | admin
 
 class ModerationResolve(BaseModel):
     resolution: Optional[str] = "resolved"
+
+
+class LockdownToggle(BaseModel):
+    active: bool
+
+class BlastRequest(BaseModel):
+    passphrase: str
+
+class ImportBlueprintRequest(BaseModel):
+    data: str   # base64-encoded .inm file contents
+    passphrase: str

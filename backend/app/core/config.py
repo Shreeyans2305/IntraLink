@@ -11,10 +11,11 @@ class Settings(BaseSettings):
 
     MONGO_URL: str = "mongodb://localhost:27017"
     MONGO_DB: str = "intralink"
+    USE_MOCK_DB: bool = False
     SECRET_KEY: str = "change-me"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
     ALGORITHM: str = "HS256"
-    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000"
+    CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,https://localhost:5174"
 
     @property
     def cors_origins_list(self) -> List[str]:

@@ -50,7 +50,7 @@ async def create_temp_room(
         "description": f"Temporary room – expires in {body.duration}",
         "type": "temporary",
         "archived": False,
-        "members": [{"user_id": current_user["id"], "room_role": "room_supervisor"}],
+        "members": [{"user_id": current_user["id"], "room_role": "room_manager", "muted": False}],
         "pinned_message_ids": [],
         "created_by": current_user["id"],
         "created_at": now,

@@ -72,12 +72,16 @@ async def vote_poll(
         if user_id in opt.get("voters", []):
             raise HTTPException(400, "Already voted")
 
+    selected_option = next((opt for opt in poll["options"] if opt.get("id") == body.option_id), None)
+    if not selected_option:
+        raise HTTPException(404, "Poll option not found")
+
+    selected_option["votes"] = int(selected_option.get("votes", 0)) + 1
+    selected_option.setdefault("voters", []).append(user_id)
+
     await polls_col().update_one(
-        {"_id": str_to_oid(poll_id), "options.id": body.option_id},
-        {
-            "$inc": {"options.$.votes": 1},
-            "$push": {"options.$.voters": user_id},
-        }
+        {"_id": str_to_oid(poll_id)},
+        {"$set": {"options": poll["options"]}},
     )
     updated = await polls_col().find_one({"_id": str_to_oid(poll_id)})
     return doc_to_dict(updated)
@@ -89,11 +93,11 @@ async def close_poll(
     poll_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    if current_user["org_role"] not in ("admin", "room_supervisor"):
+    if current_user["org_role"] not in ("admin", "room_manager"):
         room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
         member = next((m for m in room.get("members", []) if m["user_id"] == current_user["id"]), None)
-        if not member or member.get("room_role") != "room_supervisor":
-            raise HTTPException(403, "Supervisor or admin required")
+        if not member or member.get("room_role") != "room_manager":
+            raise HTTPException(403, "Room manager or admin required")
     await polls_col().update_one(
         {"_id": str_to_oid(poll_id)},
         {"$set": {"closed": True}}

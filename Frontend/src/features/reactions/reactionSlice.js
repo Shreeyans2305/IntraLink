@@ -1,12 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  byMessage: {
-    'm-1': {
-      '👍': ['Nina', 'Alex'],
-      '🎉': ['Omar'],
-    },
-  },
+  byMessage: {},
 }
 
 const reactionSlice = createSlice({
@@ -14,26 +9,41 @@ const reactionSlice = createSlice({
   initialState,
   reducers: {
     toggleReaction: (state, action) => {
-      const { messageId, emoji, actor } = action.payload
+      const { messageId, emoji, user } = action.payload
+      if (!messageId || !emoji) {
+        return
+      }
 
       if (!state.byMessage[messageId]) {
         state.byMessage[messageId] = {}
       }
+
       if (!state.byMessage[messageId][emoji]) {
         state.byMessage[messageId][emoji] = []
       }
 
-      const existing = state.byMessage[messageId][emoji]
-      if (existing.includes(actor)) {
-        state.byMessage[messageId][emoji] = existing.filter((name) => name !== actor)
+      const currentUsers = state.byMessage[messageId][emoji]
+      const actor = user ?? { id: 'me', name: 'You' }
+      const existingIndex = currentUsers.findIndex((item) => item.id === actor.id)
+
+      if (existingIndex >= 0) {
+        currentUsers.splice(existingIndex, 1)
       } else {
-        state.byMessage[messageId][emoji].push(actor)
+        currentUsers.push(actor)
       }
+
+      if (!currentUsers.length) {
+        delete state.byMessage[messageId][emoji]
+      }
+    },
+    setReactions: (state, action) => {
+      const { messageId, reactions } = action.payload
+      state.byMessage[messageId] = reactions
     },
   },
 })
 
-export const { toggleReaction } = reactionSlice.actions
+export const { toggleReaction, setReactions } = reactionSlice.actions
 export const selectReactionsByMessage = (state) => state.reactions.byMessage
 
 export default reactionSlice.reducer

@@ -41,7 +41,6 @@ async def get_messages(
     limit: int = Query(50, ge=1, le=100),
     current_user: dict = Depends(get_current_user),
 ):
-    await _check_member(room_id, current_user)
     query = {"room_id": room_id}
     if before:
         query["_id"] = {"$lt": str_to_oid(before)}
@@ -52,7 +51,6 @@ async def get_messages(
 
 @router.get("/pinned")
 async def get_pinned(room_id: str, current_user: dict = Depends(get_current_user)):
-    await _check_member(room_id, current_user)
     room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
     pin_ids = room.get("pinned_message_ids", []) if room else []
     if not pin_ids:
@@ -72,8 +70,8 @@ async def pin_message(
     if current_user["org_role"] != "admin":
         room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
         member = next((m for m in room.get("members", []) if m["user_id"] == current_user["id"]), None)
-        if not member or member.get("room_role") != "room_supervisor":
-            raise HTTPException(403, "Supervisor or admin required to pin")
+        if not member or member.get("room_role") != "room_manager":
+            raise HTTPException(403, "Room manager or admin required to pin")
     await rooms_col().update_one(
         {"_id": str_to_oid(room_id)},
         {"$addToSet": {"pinned_message_ids": message_id}}

@@ -1,18 +1,7 @@
 import { createSlice } from '@reduxjs/toolkit'
 
 const initialState = {
-  polls: [
-    {
-      id: 'poll-1',
-      roomId: 'room-general',
-      question: 'Should we freeze merges before release?',
-      options: [
-        { id: 'opt-1', label: 'Yes', votes: 7 },
-        { id: 'opt-2', label: 'No', votes: 3 },
-      ],
-      closed: false,
-    },
-  ],
+  polls: [],
 }
 
 const pollSlice = createSlice({
@@ -20,11 +9,18 @@ const pollSlice = createSlice({
   initialState,
   reducers: {
     createPoll: (state, action) => {
-      state.polls.unshift({
-        id: `poll-${Date.now()}`,
-        closed: false,
-        ...action.payload,
-      })
+      const payload = action.payload
+      const poll = {
+        id: payload.id ?? `poll-${Date.now()}`,
+        question: payload.question,
+        roomId: payload.roomId,
+        options: payload.options ?? [],
+        anonymous: Boolean(payload.anonymous),
+        closeAt: payload.closeAt ?? null,
+        closed: Boolean(payload.closed),
+      }
+
+      state.polls.push(poll)
     },
     votePoll: (state, action) => {
       const { pollId, optionId } = action.payload
@@ -32,9 +28,13 @@ const pollSlice = createSlice({
       if (!poll || poll.closed) {
         return
       }
-      poll.options = poll.options.map((option) =>
-        option.id === optionId ? { ...option, votes: option.votes + 1 } : option,
-      )
+
+      const option = poll.options.find((item) => item.id === optionId)
+      if (!option) {
+        return
+      }
+
+      option.votes = (option.votes ?? 0) + 1
     },
     closePoll: (state, action) => {
       const poll = state.polls.find((item) => item.id === action.payload)
@@ -42,10 +42,25 @@ const pollSlice = createSlice({
         poll.closed = true
       }
     },
+    setPolls: (state, action) => {
+      state.polls = action.payload
+    },
+    updatePoll: (state, action) => {
+      const incoming = action.payload
+      const index = state.polls.findIndex((p) => p.id === incoming.id)
+      if (index >= 0) {
+        state.polls[index] = incoming
+      } else {
+        state.polls.push(incoming)
+      }
+    },
+    removePoll: (state, action) => {
+      state.polls = state.polls.filter((p) => p.id !== action.payload)
+    },
   },
 })
 
-export const { createPoll, votePoll, closePoll } = pollSlice.actions
+export const { createPoll, votePoll, closePoll, setPolls, updatePoll, removePoll } = pollSlice.actions
 export const selectPolls = (state) => state.polls.polls
 
 export default pollSlice.reducer

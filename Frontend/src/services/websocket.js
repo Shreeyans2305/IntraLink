@@ -4,7 +4,8 @@ let socket
 
 export function getSocket() {
   if (!socket) {
-    socket = io(import.meta.env.VITE_SOCKET_URL ?? 'http://localhost:4000', {
+    const defaultSocketUrl = typeof window !== 'undefined' ? window.location.origin : 'http://localhost:8000'
+    socket = io(import.meta.env.VITE_SOCKET_URL ?? defaultSocketUrl, {
       autoConnect: false,
       reconnection: true,
       reconnectionAttempts: 10,

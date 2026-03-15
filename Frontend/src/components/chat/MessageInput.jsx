@@ -18,6 +18,7 @@ function MessageInput({
   roomId,
   onSend,
   disabled,
+  unauthorized = false,
   smartReplies = [],
   tone,
   onToneChange,
@@ -111,6 +112,16 @@ function MessageInput({
       event.preventDefault()
       handleSend()
     }
+  }
+
+  if (unauthorized) {
+    return (
+      <div className="border-t border-slate-200 pt-3">
+        <div className="flex h-16 items-center justify-center rounded-md border border-slate-200 bg-slate-50 text-sm italic text-slate-500">
+          You don't have permission to message in this room.
+        </div>
+      </div>
+    )
   }
 
   return (

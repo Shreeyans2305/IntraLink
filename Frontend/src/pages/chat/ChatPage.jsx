@@ -1,6 +1,6 @@
 import { startTransition, useDeferredValue, useEffect, useMemo, useRef, useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
-import { ArrowDownCircle, Bell, Command, Keyboard, Search, Star } from 'lucide-react'
+import { ArrowDownCircle, Bell, Command, Keyboard, Search, Star, Plus, UserPlus } from 'lucide-react'
 import { useDispatch, useSelector } from 'react-redux'
 import { Link, useNavigate } from 'react-router-dom'
 import Avatar from '../../components/ui/Avatar'
@@ -24,6 +24,8 @@ import EmptyState from '../../components/ui/EmptyState'
 import ShortcutModal from '../../components/ui/ShortcutModal'
 import SkeletonBlock from '../../components/ui/SkeletonBlock'
 import Toast from '../../components/ui/Toast'
+import CreateRoomModal from '../../components/chat/CreateRoomModal'
+import ManageMembersModal from '../../components/chat/ManageMembersModal'
 import {
   addSummaryCard,
   endAiRequest,
@@ -44,29 +46,20 @@ import { useAuth } from '../../features/auth/useAuth'
 import { commandRegistry } from '../../features/commands/commandRegistry'
 import { useCommands } from '../../features/commands/useCommands'
 import { useFiles } from '../../features/files/useFiles'
-import {
-  addPinnedMessage,
-  addSystemMessage,
-  removeExpiredMessages,
-  selectActiveRoomId,
-  selectMessagesForActiveRoom,
-  selectPinnedIds,
-  selectRooms,
-  selectTypingUsers,
-  sendMessage,
-  setActiveRoom,
-  setThreadCount,
-} from '../../features/messaging/messagingSlice'
+import { addPinnedMessage, addSystemMessage, removeExpiredMessages, selectActiveRoomId, selectMessagesForActiveRoom, selectPinnedIds, selectRooms, selectTypingUsers, setActiveRoom, setRooms, setMessages, sendMessage } from '../../features/messaging/messagingSlice'
 import { markAllRead, markRead, selectNotifications, selectUnreadCount } from '../../features/notifications/notifSlice'
 import { setCustomStatus, selectPresence, setStatus } from '../../features/presence/presenceSlice'
 import { selectPolls, votePoll, createPoll } from '../../features/polls/pollSlice'
-import { selectReactionsByMessage, toggleReaction } from '../../features/reactions/reactionSlice'
-import { addThreadMessage, closeThread, openThread, selectThreadState } from '../../features/threads/threadSlice'
+import { selectReactionsByMessage } from '../../features/reactions/reactionSlice'
+import { closeThread, openThread, selectThreadState } from '../../features/threads/threadSlice'
 import { createTempRoom, selectTempRooms } from '../../features/temprooms/tempRoomSlice'
 import { useRoomTimer } from '../../features/temprooms/useRoomTimer'
 import { setTempRoomMetric } from '../../features/admin/adminSlice'
 import { usePresenceSync } from '../../hooks/usePresenceSync'
 import { usePushNotif } from '../../hooks/usePushNotif'
+import { fetchRooms, fetchMessages, createRoom, joinRoom } from '../../features/messaging/messagingApi'
+import { createTemporaryRoomApi } from '../../features/temprooms/tempRoomApi'
+import { useMessagingSocket } from '../../hooks/useMessagingSocket'
 
 function reorderIds(list, draggedId, targetId) {
   const withoutDragged = list.filter((item) => item !== draggedId)
@@ -138,19 +131,18 @@ function ChatPage() {
     tempRooms: false,
     commandHistory: false,
   })
-  const [favoriteRoomIds, setFavoriteRoomIds] = useState(['room-general'])
-  const [recentRoomIds, setRecentRoomIds] = useState(['room-general'])
+  const [favoriteRoomIds, setFavoriteRoomIds] = useState([])
+  const [recentRoomIds, setRecentRoomIds] = useState([])
   const [commandHistory, setCommandHistory] = useState(['/help', '/summarize standard'])
   const [selectionMode, setSelectionMode] = useState(false)
   const [selectedMessageIds, setSelectedMessageIds] = useState([])
   const [smartRepliesDismissed, setSmartRepliesDismissed] = useState(false)
   const [threadWidth, setThreadWidth] = useState(360)
   const [isThreadResizing, setIsThreadResizing] = useState(false)
-  const [lastReadByRoom, setLastReadByRoom] = useState({
-    'room-general': Date.now() - 1000 * 60 * 7,
-    'room-eng': Date.now() - 1000 * 60 * 11,
-    'room-temp-war': Date.now() - 1000 * 60,
-  })
+  const [lastReadByRoom, setLastReadByRoom] = useState({})
+
+  const [showCreateRoom, setShowCreateRoom] = useState(false)
+  const [showManageMembers, setShowManageMembers] = useState(false)
   const [showJumpToLatest, setShowJumpToLatest] = useState(false)
   const [draggedRoomId, setDraggedRoomId] = useState(null)
   const [roomOrder, setRoomOrder] = useState(() =>
@@ -158,6 +150,29 @@ function ChatPage() {
   )
   const chatScrollRef = useRef(null)
   const previousRoomRef = useRef(activeRoomId)
+
+  const { socket } = useMessagingSocket()
+
+  useEffect(() => {
+    async function load() {
+      if (user) {
+        const data = await fetchRooms()
+        dispatch(setRooms(data))
+      }
+    }
+    load()
+  }, [user, dispatch])
+
+  useEffect(() => {
+    async function loadMsgs() {
+      if (activeRoomId && socket) {
+        const data = await fetchMessages(activeRoomId)
+        dispatch(setMessages({ roomId: activeRoomId, messages: data }))
+        socket.emit('join_room', { room_id: activeRoomId })
+      }
+    }
+    loadMsgs()
+  }, [activeRoomId, dispatch, socket])
 
   useRoomTimer()
   usePresenceSync()
@@ -263,6 +278,12 @@ function ChatPage() {
     () => rooms.find((room) => room.id === activeRoomId) ?? tempRooms.find((room) => room.roomId === activeRoomId),
     [activeRoomId, rooms, tempRooms],
   )
+
+  const isMember = useMemo(() => {
+    if (isAdmin) return true
+    if (!currentRoom) return false
+    return currentRoom.members?.some((m) => m.user_id === user?.id)
+  }, [currentRoom, user, isAdmin])
 
   const userDirectory = useMemo(() => {
     const profiles = {
@@ -514,24 +535,24 @@ function ChatPage() {
         dispatch(endAiRequest())
       }
     },
-    'create-temp-room': (args) => {
+    'create-temp-room': async (args) => {
       const name = args[0] ?? `temp-room-${Date.now().toString().slice(-4)}`
       const duration = args[1] ?? '1h'
 
-      dispatch(
-        createTempRoom({
-          name,
-          duration,
-          createdBy: user?.name ?? 'You',
-        }),
-      )
-
-      dispatch(
-        addSystemMessage({
-          roomId: activeRoomId,
-          text: `Temporary room "${name}" created for ${duration}.`,
-        }),
-      )
+      try {
+        const newTemp = await createTemporaryRoomApi({ name, duration })
+        dispatch(
+          addSystemMessage({
+            roomId: activeRoomId,
+            text: `Temporary room "${name}" created for ${duration}. ID: ${newTemp.id}`,
+          }),
+        )
+        // Refetch full room list
+        const latestRooms = await fetchRooms()
+        dispatch(setRooms(latestRooms))
+      } catch (err) {
+        setToast({ type: 'error', message: err.response?.data?.detail || 'Failed to create temp room' })
+      }
     },
     whisper: (args) => {
       const target = args[0]
@@ -540,35 +561,44 @@ function ChatPage() {
       dispatch(
         addSystemMessage({
           roomId: activeRoomId,
-          text: target && body ? `Whisper to @${target}: ${body}` : 'Usage: /whisper [user] [message]',
+          text: target && body ? `Whisper to @${target}: ${body} (Note: Direct messaging UI not fully bound yet)` : 'Usage: /whisper [user] [message]',
         }),
       )
     },
-    join: (args) => {
-      const roomName = args[0] ?? 'general'
-      dispatch(
-        addSystemMessage({
-          roomId: activeRoomId,
-          text: `Joined room ${roomName}.`,
-        }),
-      )
+    join: async (args) => {
+      const roomId = args[0]
+      if (!roomId) {
+        setToast({ type: 'warning', message: 'Usage: /join [room_id]' })
+        return
+      }
+      try {
+        await joinRoom(roomId)
+        setToast({ type: 'info', message: 'Joined room.' })
+        // Refetch full room list
+        const latestRooms = await fetchRooms()
+        dispatch(setRooms(latestRooms))
+      } catch (err) {
+         setToast({ type: 'error', message: err.response?.data?.detail || 'Failed to join room' })
+      }
     },
     leave: () => {
       dispatch(
         addSystemMessage({
           roomId: activeRoomId,
-          text: 'You left the room.',
+          text: 'Leaving current room is not fully supported via chat slash command yet.',
         }),
       )
     },
-    'create-room': (args) => {
+    'create-room': async (args) => {
       const roomName = args[0] ?? 'new-room'
-      dispatch(
-        addSystemMessage({
-          roomId: activeRoomId,
-          text: `Room ${roomName} created (mock).`,
-        }),
-      )
+      try {
+        await createRoom({ name: roomName, description: '', type: 'standard' })
+        setToast({ type: 'info', message: 'Room created successfully.' })
+        const latestRooms = await fetchRooms()
+        dispatch(setRooms(latestRooms))
+      } catch (err) {
+        setToast({ type: 'error', message: err.response?.data?.detail || 'Failed to create room' })
+      }
     },
   })
 
@@ -675,26 +705,25 @@ function ChatPage() {
       return
     }
 
-    dispatch(
-      sendMessage({
-        roomId: activeRoomId,
-        text,
-        authorName: user?.name ?? 'You',
-        authorId: user?.id ?? 'current-user',
-      }),
-    )
+    if (socket) {
+      dispatch(
+        sendMessage({
+          roomId: activeRoomId,
+          text,
+          authorName: user?.name ?? 'You',
+          authorId: user?.id ?? 'local',
+        })
+      )
+      socket.emit('send_message', { room_id: activeRoomId, text })
+    }
 
     setToast({ type: 'info', message: 'Message sent.' })
   }
 
   const handleReact = (messageId, emoji) => {
-    dispatch(
-      toggleReaction({
-        messageId,
-        emoji,
-        actor: user?.name ?? 'You',
-      }),
-    )
+    if (socket) {
+      socket.emit('toggle_reaction', { message_id: messageId, emoji })
+    }
   }
 
   const handleSaveBookmark = (message) => {
@@ -717,26 +746,12 @@ function ChatPage() {
   }
 
   const handleReplyInThread = (text) => {
-    if (!threadState.parentMessage) {
+    if (!threadState.parentMessage || !socket) {
       return
     }
 
     const parentId = threadState.parentMessage.id
-    dispatch(
-      addThreadMessage({
-        parentId,
-        text,
-        authorName: user?.name ?? 'You',
-      }),
-    )
-
-    dispatch(
-      setThreadCount({
-        roomId: activeRoomId,
-        messageId: parentId,
-        threadCount: (activeThreadItems?.length ?? 0) + 1,
-      }),
-    )
+    socket.emit('thread_reply', { parent_message_id: parentId, text })
   }
 
   const handleCreatePoll = (payload) => {
@@ -911,12 +926,15 @@ function ChatPage() {
               <Link to="/user/preferences" className="rounded border border-slate-200 p-2 text-center">
                 Preferences
               </Link>
+              <Link to="/manager/dashboard" className="rounded border border-slate-200 p-2 text-center">
+                Managed Rooms
+              </Link>
               {isAdmin ? (
                 <Link
                   to="/admin/dashboard"
-                  className="col-span-2 rounded border border-slate-200 p-2 text-center"
+                  className="rounded border border-slate-200 p-2 text-center"
                 >
-                  Admin Dashboard
+                  Admin Dash
                 </Link>
               ) : null}
             </div>
@@ -959,6 +977,7 @@ function ChatPage() {
             count={orderedRooms.length}
             collapsed={collapsedSections.rooms}
             onToggle={() => toggleSidebarSection('rooms')}
+            actionIcon={isAdmin ? <Plus size={14} onClick={(e) => { e.stopPropagation(); setShowCreateRoom(true); }} /> : null}
           >
             <div className="space-y-2">
               {orderedRooms.map((room) => (
@@ -1091,8 +1110,18 @@ function ChatPage() {
           <div className="mb-3 flex items-center justify-between">
             <div>
               <p className="text-xs text-slate-500">Channel</p>
-              <h2 className="text-lg font-semibold text-slate-900">
-                #{currentRoom?.name ?? activeRoomId.replace('room-', '')}
+              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+                #{currentRoom?.name ?? activeRoomId?.replace('room-', '') ?? 'select-room'}
+                {!roomIsLocked && 
+                  (isAdmin || currentRoom?.members?.find(m => m.user_id === user?.id)?.room_role === 'room_manager') && (
+                  <button 
+                    onClick={() => setShowManageMembers(true)}
+                    className="text-slate-400 hover:text-cyan-600 transition-colors ml-2"
+                    title="Manage Members"
+                  >
+                    <UserPlus size={16} />
+                  </button>
+                )}
               </h2>
               <p className="text-xs text-slate-500">
                 {roomSignals[activeRoomId]?.unreadCount ?? 0} unread · {roomSignals[activeRoomId]?.threadCount ?? 0} threaded replies
@@ -1234,6 +1263,7 @@ function ChatPage() {
               key={activeRoomId}
               roomId={activeRoomId}
               disabled={roomIsLocked}
+              unauthorized={!isMember}
               onSend={handleSendMessage}
               smartReplies={aiState.smartReplies}
               tone={preferences.tone}

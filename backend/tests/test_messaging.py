@@ -12,12 +12,12 @@ async def test_send_message_via_rest_is_blocked(client, admin_headers):
 
 
 @pytest.mark.asyncio
-async def test_get_messages_requires_membership(client, admin_headers, user_headers):
+async def test_get_messages_allows_non_members(client, admin_headers, user_headers):
     create_resp = await client.post("/api/rooms/", json={"name": "private"}, headers=admin_headers)
     room_id = create_resp.json()["id"]
     # User is not a member
     resp = await client.get(f"/api/rooms/{room_id}/messages/", headers=user_headers)
-    assert resp.status_code == 403
+    assert resp.status_code == 200
 
 
 @pytest.mark.asyncio

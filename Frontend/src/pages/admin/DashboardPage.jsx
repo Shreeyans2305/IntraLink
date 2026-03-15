@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react'
+import { useMemo, useState, useEffect } from 'react'
 import { Link } from 'react-router-dom'
 import ActivityChart from '../../components/dashboard/ActivityChart'
 import ActivityHeatmap from '../../components/dashboard/ActivityHeatmap'
@@ -7,11 +7,159 @@ import SpamFeed from '../../components/dashboard/SpamFeed'
 import Button from '../../components/ui/Button'
 import SkeletonBlock from '../../components/ui/SkeletonBlock'
 import { useAdmin } from '../../features/admin/useAdmin'
+import apiClient from '../../services/apiClient'
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
+import { fetchUsers, fetchRooms, addRoomMember, updateRoomMember } from '../../features/messaging/messagingApi'
+
+function AssignManagerWidget() {
+  const queryClient = useQueryClient()
+  const [selectedRoom, setSelectedRoom] = useState('')
+  const [selectedUser, setSelectedUser] = useState('')
+
+  const { data: users = [] } = useQuery({ queryKey: ['adminUsers'], queryFn: fetchUsers })
+  const { data: rooms = [] } = useQuery({ queryKey: ['adminRooms'], queryFn: fetchRooms })
+
+  const assignMutation = useMutation({
+    mutationFn: async () => {
+      const room = rooms.find(r => r.id === selectedRoom)
+      const existing = room?.members?.find(m => m.user_id === selectedUser)
+      if (existing) {
+        return updateRoomMember(selectedRoom, selectedUser, { room_role: 'room_manager' })
+      } else {
+        return addRoomMember(selectedRoom, { user_id: selectedUser, room_role: 'room_manager' })
+      }
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['adminRooms'] })
+      queryClient.invalidateQueries({ queryKey: ['rooms'] })
+      alert("Room Manager assigned successfully!")
+      setSelectedUser('')
+      setSelectedRoom('')
+    },
+    onError: (err) => alert(err.response?.data?.detail || "Failed to assign manager")
+  })
+
+  return (
+    <div className="rounded-lg border border-slate-200 bg-white p-3 xl:col-span-3 mt-0 mb-4">
+      <div className="mb-3 flex items-center justify-between">
+        <h3 className="text-sm font-semibold text-slate-800">Assign Room Manager</h3>
+        <span className="text-xs text-slate-500">Elevate user privileges for specific rooms</span>
+      </div>
+      <div className="flex flex-col md:flex-row gap-3 items-end">
+        <div className="flex-1 w-full">
+          <label className="mb-1 block text-xs text-slate-500">Pick a Room</label>
+          <select 
+            value={selectedRoom} 
+            onChange={e => setSelectedRoom(e.target.value)}
+            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-cyan-500 outline-none"
+          >
+            <option value="">-- Select Room --</option>
+            {rooms.map(r => <option key={r.id} value={r.id}>#{r.name}</option>)}
+          </select>
+        </div>
+        <div className="flex-1 w-full">
+          <label className="mb-1 block text-xs text-slate-500">Pick a User</label>
+          <select 
+            value={selectedUser} 
+            onChange={e => setSelectedUser(e.target.value)}
+            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-cyan-500 outline-none"
+          >
+            <option value="">-- Select User --</option>
+            {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
+          </select>
+        </div>
+        <div className="w-full md:w-auto">
+          <Button 
+            disabled={!selectedRoom || !selectedUser || assignMutation.isPending}
+            onClick={() => assignMutation.mutate()}
+            className="w-full md:w-auto"
+          >
+            {assignMutation.isPending ? 'Assigning...' : 'Assign Manager'}
+          </Button>
+        </div>
+      </div>
+    </div>
+  )
+}
 
 function DashboardPage() {
   const { metrics, activitySeries, moderationQueue } = useAdmin()
   const [range, setRange] = useState('today')
   const [refreshing, setRefreshing] = useState(false)
+  const [lockdownActive, setLockdownActive] = useState(false)
+
+  // Fetch initial lockdown state
+  useEffect(() => {
+    apiClient.get('/admin/lockdown').then((res) => {
+      setLockdownActive(res.data.active)
+    }).catch(err => console.error("Failed to fetch lockdown state", err))
+  }, [])
+
+  const handleToggleLockdown = async () => {
+    try {
+      const resp = await apiClient.post('/admin/lockdown', { active: !lockdownActive })
+      setLockdownActive(resp.data.active)
+    } catch (err) {
+      console.error("Failed to toggle lockdown", err)
+    }
+  }
+
+  const handleBlast = async () => {
+    const passphrase = window.prompt("Enter a strong passphrase to encrypt the org blueprint:")
+    if (!passphrase) return
+    if (!window.confirm("WARNING: This will wipe all messages, rooms, and temp rooms. Are you absolutely sure?")) return
+    
+    try {
+      const response = await apiClient.post('/admin/blast', { passphrase }, { responseType: 'blob' })
+      const url = window.URL.createObjectURL(new Blob([response.data]))
+      const link = document.createElement('a')
+      link.href = url
+      link.setAttribute('download', 'blueprint.inm')
+      document.body.appendChild(link)
+      link.click()
+      link.parentNode.removeChild(link)
+      alert("Blast successful. Data wiped. Check your downloads for blueprint.inm.")
+    } catch (err) {
+      console.error("Blast failed", err)
+      alert("Blast failed.")
+    }
+  }
+
+  const handleRestore = () => {
+    const input = document.createElement('input')
+    input.type = 'file'
+    input.accept = '.inm'
+    input.onchange = async (e) => {
+      const file = e.target.files[0]
+      if (!file) return
+      const passphrase = window.prompt("Enter the passphrase used to encrypt this blueprint:")
+      if (!passphrase) return
+      
+      const reader = new FileReader()
+      reader.onload = async (re) => {
+        // convert array buffer to base64
+        const bytes = new Uint8Array(re.target.result)
+        let binary = ''
+        for (let i = 0; i < bytes.byteLength; i++) {
+          binary += String.fromCharCode(bytes[i])
+        }
+        const base64Data = window.btoa(binary)
+        
+        try {
+          const resp = await apiClient.post('/admin/import-blueprint', {
+            data: base64Data,
+            passphrase
+          })
+          alert(`Restore successful! Created ${resp.data.rooms_created} rooms and restored ${resp.data.whitelists_restored} whitelists.`)
+        } catch (err) {
+          console.error("Restore failed", err)
+          alert("Restore failed. Invalid file or wrong passphrase.")
+        }
+      }
+      reader.readAsArrayBuffer(file)
+    }
+    input.click()
+  }
 
   const scale = {
     today: 1,
@@ -80,6 +228,9 @@ function DashboardPage() {
           <Link to="/admin/temp-rooms" className="block rounded-md border border-slate-200 px-3 py-2">
             ⏳ Temp Rooms
           </Link>
+          <Link to="/admin/whitelist" className="block rounded-md border border-slate-200 px-3 py-2">
+            📋 Whitelist
+          </Link>
           <Link to="/chat" className="block rounded-md border border-slate-200 px-3 py-2">
             ← Back to Chat
           </Link>
@@ -145,9 +296,49 @@ function DashboardPage() {
                 <p className="text-sm font-semibold text-slate-900">Temp Room Policies</p>
                 <p className="mt-1 text-xs text-slate-500">Watch countdowns and enforce lifecycle rules.</p>
               </Link>
+              <button 
+                onClick={handleToggleLockdown}
+                className={`rounded-lg border p-3 text-left transition-colors ${lockdownActive ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-slate-200 hover:bg-slate-50'}`}
+              >
+                <div className="flex items-center justify-between">
+                  <p className={`text-sm font-semibold ${lockdownActive ? 'text-red-700' : 'text-slate-900'}`}>
+                    {lockdownActive ? 'Disable Lockdown' : 'Enable Lockdown'}
+                  </p>
+                  <div className={`h-2.5 w-2.5 rounded-full ${lockdownActive ? 'bg-red-500 animate-pulse' : 'bg-slate-300'}`} />
+                </div>
+                <p className={`mt-1 text-xs ${lockdownActive ? 'text-red-600' : 'text-slate-500'}`}>
+                  {lockdownActive 
+                    ? 'System locked down. Only admin actions permitted.'
+                    : 'Emergency mode to halt all messaging instantly.'}
+                </p>
+              </button>
+            </div>
+          </div>
+
+          <div className="rounded-lg border border-red-200 bg-red-50 p-3 xl:col-span-1">
+            <div className="mb-3 flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-red-800">Danger Zone</h3>
+            </div>
+            <div className="flex flex-col gap-3">
+              <button 
+                onClick={handleBlast}
+                className="rounded-lg border border-red-300 bg-white p-3 text-left transition-colors hover:bg-red-100"
+              >
+                <p className="text-sm font-semibold text-red-700">💥 Blast Org</p>
+                <p className="mt-1 text-xs text-red-600">Encrypt everything to blueprint.inm & wipe live data.</p>
+              </button>
+              <button 
+                onClick={handleRestore}
+                className="rounded-lg border border-red-300 bg-white p-3 text-left transition-colors hover:bg-red-100"
+              >
+                <p className="text-sm font-semibold text-red-700">📥 Restore Blueprint</p>
+                <p className="mt-1 text-xs text-red-600">Import an encrypted blueprint.inm to restore config.</p>
+              </button>
             </div>
           </div>
         </section>
+
+        <AssignManagerWidget />
 
         <section className="rounded-lg border border-slate-200 bg-white p-3">
           <div className="mb-3 flex items-center justify-between">

@@ -1,13 +1,24 @@
 from motor.motor_asyncio import AsyncIOMotorClient
 from app.core.config import settings
+from typing import Any
 
-_client: AsyncIOMotorClient = None
+try:
+    from mongomock_motor import AsyncMongoMockClient
+except Exception:  # pragma: no cover
+    AsyncMongoMockClient = None
+
+_client: Any = None
 
 
-def get_client() -> AsyncIOMotorClient:
+def get_client() -> Any:
     global _client
     if _client is None:
-        _client = AsyncIOMotorClient(settings.MONGO_URL)
+        if settings.USE_MOCK_DB:
+            if AsyncMongoMockClient is None:
+                raise RuntimeError("USE_MOCK_DB=true requires mongomock-motor to be installed")
+            _client = AsyncMongoMockClient()
+        else:
+            _client = AsyncIOMotorClient(settings.MONGO_URL)
     return _client
 
 
@@ -50,6 +61,18 @@ def audit_col():
 
 def notifications_col():
     return get_database()["notifications"]
+
+
+def org_col():
+    return get_database()["organizations"]
+
+
+def whitelists_col():
+    return get_database()["whitelists"]
+
+
+def system_config_col():
+    return get_database()["system_config"]
 
 
 async def close_client():

@@ -1,74 +1,12 @@
-import { createSlice } from '@reduxjs/toolkit'
-
-const now = Date.now()
+import { createSlice, createSelector } from '@reduxjs/toolkit'
 
 const initialState = {
-  rooms: [
-    { id: 'room-general', name: 'general', type: 'standard' },
-    { id: 'room-eng', name: 'engineering', type: 'standard' },
-    {
-      id: 'room-temp-war',
-      name: 'incident-war-room',
-      type: 'temporary',
-      expiresAt: now + 1000 * 60 * 55,
-    },
-  ],
-  activeRoomId: 'room-general',
-  messagesByRoom: {
-    'room-general': [
-      {
-        id: 'm-1',
-        authorName: 'Nina',
-        authorId: 'u-2',
-        text: 'Deployment complete. Please verify smoke checks.',
-        timestamp: now - 1000 * 60 * 12,
-        threadCount: 2,
-      },
-      {
-        id: 'm-2',
-        authorName: 'Alex',
-        authorId: 'u-3',
-        text: 'Reminder: daily standup starts in 10 minutes.',
-        timestamp: now - 1000 * 60 * 6,
-        threadCount: 0,
-        expiryAt: now + 1000 * 60 * 60,
-      },
-    ],
-    'room-eng': [
-      {
-        id: 'm-3',
-        authorName: 'Ravi',
-        authorId: 'u-4',
-        text: 'Can someone review PR #128?',
-        timestamp: now - 1000 * 60 * 14,
-        threadCount: 1,
-      },
-    ],
-    'room-temp-war': [
-      {
-        id: 'm-4',
-        authorName: 'System',
-        authorId: 'system',
-        text: 'Temporary room created for incident response. Auto-expiry enabled.',
-        timestamp: now - 1000 * 60 * 2,
-        isSystem: true,
-        threadCount: 0,
-      },
-    ],
-  },
-  typingByRoom: {
-    'room-general': ['Priya'],
-    'room-eng': [],
-    'room-temp-war': [],
-  },
-  pinnedByRoom: {
-    'room-general': ['m-1'],
-    'room-eng': [],
-    'room-temp-war': ['m-4'],
-  },
+  rooms: [],
+  activeRoomId: null,
+  messagesByRoom: {},
+  typingByRoom: {},
+  pinnedByRoom: {},
 }
-
-const createMessageId = () => `m-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`
 
 const messagingSlice = createSlice({
   name: 'messaging',
@@ -77,9 +15,34 @@ const messagingSlice = createSlice({
     setActiveRoom: (state, action) => {
       state.activeRoomId = action.payload
     },
+    setRooms: (state, action) => {
+      state.rooms = action.payload
+      if (!state.activeRoomId && action.payload.length > 0) {
+        state.activeRoomId = action.payload[0].id
+      }
+    },
+    setMessages: (state, action) => {
+      const { roomId, messages } = action.payload
+      state.messagesByRoom[roomId] = messages
+    },
+    receiveMessage: (state, action) => {
+      const { roomId, ...message } = action.payload
+      if (!state.messagesByRoom[roomId]) {
+        state.messagesByRoom[roomId] = []
+      }
+      const existingIndex = state.messagesByRoom[roomId].findIndex(
+        (m) => m.id === message.id || (m.id.startsWith('pending-') && m.text === message.text && m.authorId === message.authorId)
+      )
+      if (existingIndex >= 0) {
+        state.messagesByRoom[roomId][existingIndex] = message
+      } else {
+        state.messagesByRoom[roomId].push(message)
+      }
+    },
     sendMessage: (state, action) => {
       const {
         roomId,
+        id,
         text,
         authorName,
         authorId,
@@ -93,7 +56,7 @@ const messagingSlice = createSlice({
       }
 
       state.messagesByRoom[roomId].push({
-        id: createMessageId(),
+        id: id || `pending-${Date.now()}`,
         text,
         authorName,
         authorId,
@@ -111,7 +74,7 @@ const messagingSlice = createSlice({
       }
 
       state.messagesByRoom[roomId].push({
-        id: createMessageId(),
+        id: `sys-${Date.now()}`,
         text,
         authorName: 'System',
         authorId: 'system',
@@ -161,6 +124,9 @@ const messagingSlice = createSlice({
 
 export const {
   setActiveRoom,
+  setRooms,
+  setMessages,
+  receiveMessage,
   sendMessage,
   addSystemMessage,
   setTypingUsers,
@@ -171,11 +137,26 @@ export const {
 
 export const selectRooms = (state) => state.messaging.rooms
 export const selectActiveRoomId = (state) => state.messaging.activeRoomId
-export const selectTypingUsers = (state) =>
-  state.messaging.typingByRoom[state.messaging.activeRoomId] ?? []
-export const selectPinnedIds = (state) =>
-  state.messaging.pinnedByRoom[state.messaging.activeRoomId] ?? []
-export const selectMessagesForActiveRoom = (state) =>
-  state.messaging.messagesByRoom[state.messaging.activeRoomId] ?? []
+
+const selectTypingByRoom = (state) => state.messaging.typingByRoom
+const selectPinnedByRoom = (state) => state.messaging.pinnedByRoom
+const selectMessagesByRoom = (state) => state.messaging.messagesByRoom
+
+const emptyArray = []
+
+export const selectTypingUsers = createSelector(
+  [selectTypingByRoom, selectActiveRoomId],
+  (typingByRoom, activeRoomId) => (activeRoomId ? (typingByRoom[activeRoomId] ?? emptyArray) : emptyArray)
+)
+
+export const selectPinnedIds = createSelector(
+  [selectPinnedByRoom, selectActiveRoomId],
+  (pinnedByRoom, activeRoomId) => (activeRoomId ? (pinnedByRoom[activeRoomId] ?? emptyArray) : emptyArray)
+)
+
+export const selectMessagesForActiveRoom = createSelector(
+  [selectMessagesByRoom, selectActiveRoomId],
+  (messagesByRoom, activeRoomId) => (activeRoomId ? (messagesByRoom[activeRoomId] ?? emptyArray) : emptyArray)
+)
 
 export default messagingSlice.reducer

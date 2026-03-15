@@ -27,11 +27,20 @@ async def test_audit_log_admin_only(client, admin_headers, user_headers):
 
 @pytest.mark.asyncio
 async def test_list_users_admin(client, admin_headers, user_headers):
+    org_resp = await client.get("/api/org/")
+    org_id = org_resp.json()["orgs"][0]["id"]
+    
+    await client.post("/api/admin/whitelist", json={
+        "email": "extra@test.com",
+        "org_role": "user",
+    }, headers=admin_headers)
+    
     # Register an extra user
     await client.post("/api/auth/register", json={
         "name": "Extra",
         "email": "extra@test.com",
         "password": "pass",
+        "org_id": org_id,
     })
 
     users_resp = await client.get("/api/admin/users", headers=admin_headers)
@@ -48,11 +57,11 @@ async def test_update_user_role(client, admin_headers, user_headers):
 
     update_resp = await client.put(
         f"/api/admin/users/{user_id}/role",
-        json={"org_role": "room_supervisor"},
+        json={"org_role": "room_manager"},
         headers=admin_headers,
     )
     assert update_resp.status_code == 200
 
     # Verify the change
     me_again = await client.get("/api/auth/me", headers=user_headers)
-    assert me_again.json()["org_role"] == "room_supervisor"
+    assert me_again.json()["org_role"] == "room_manager"

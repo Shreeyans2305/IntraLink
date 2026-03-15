@@ -24,8 +24,8 @@ async def _check_supervisor_or_admin(room_id: str, user: dict):
     if not room:
         raise HTTPException(404, "Room not found")
     member = next((m for m in room.get("members", []) if m["user_id"] == user["id"]), None)
-    if not member or member.get("room_role") != "room_supervisor":
-        raise HTTPException(403, "Room supervisor or admin required")
+    if not member or member.get("room_role") != "room_manager":
+        raise HTTPException(403, "Room manager or admin required")
 
 
 async def _write_audit(user_id: str, user_email: str, action: str, detail: str):
@@ -41,15 +41,8 @@ async def _write_audit(user_id: str, user_email: str, action: str, detail: str):
 
 @router.get("/")
 async def list_rooms(current_user: dict = Depends(get_current_user)):
-    user_id = current_user["id"]
-    org_role = current_user.get("org_role", "user")
-    if org_role == "admin":
-        cursor = rooms_col().find({"archived": {"$ne": True}})
-    else:
-        cursor = rooms_col().find({
-            "archived": {"$ne": True},
-            "members.user_id": user_id,
-        })
+    # All users can now see all unarchived rooms
+    cursor = rooms_col().find({"archived": {"$ne": True}})
     rooms = [_room_out(r) async for r in cursor]
     return rooms
 
@@ -64,7 +57,7 @@ async def create_room(
         "description": body.description,
         "type": "standard",
         "archived": False,
-        "members": [{"user_id": current_user["id"], "room_role": "room_supervisor"}],
+        "members": [{"user_id": current_user["id"], "room_role": "room_manager"}],
         "pinned_message_ids": [],
         "created_by": current_user["id"],
         "created_at": int(time.time() * 1000),
@@ -80,11 +73,6 @@ async def get_room(room_id: str, current_user: dict = Depends(get_current_user))
     room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
     if not room:
         raise HTTPException(404, "Room not found")
-    # Check membership or admin
-    if current_user["org_role"] != "admin":
-        member_ids = [m["user_id"] for m in room.get("members", [])]
-        if current_user["id"] not in member_ids:
-            raise HTTPException(403, "Not a member")
     return _room_out(room)
 
 
@@ -138,7 +126,7 @@ async def add_member(
         return {"ok": True, "message": "Already a member"}
     await rooms_col().update_one(
         {"_id": str_to_oid(room_id)},
-        {"$push": {"members": {"user_id": body.user_id, "room_role": body.room_role}}}
+        {"$push": {"members": {"user_id": body.user_id, "room_role": body.room_role, "muted": False}}}
     )
     await _write_audit(current_user["id"], current_user["email"], "member_add", f"Added {body.user_id} to {room_id}")
     return {"ok": True}

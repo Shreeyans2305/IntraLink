@@ -4,11 +4,7 @@ const initialState = {
   currentStatus: 'Active',
   customStatus: '',
   scheduledUntil: null,
-  users: [
-    { id: 'u-2', name: 'Nina', status: 'On a Call' },
-    { id: 'u-3', name: 'Alex', status: 'Away' },
-    { id: 'u-4', name: 'Ravi', status: 'Focus Mode' },
-  ],
+  users: [],
 }
 
 const presenceSlice = createSlice({

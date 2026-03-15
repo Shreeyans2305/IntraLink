@@ -12,6 +12,7 @@ from app.db.mongo import (
     polls_col,
     reactions_col,
     rooms_col,
+    system_config_col,
     temprooms_col,
     threads_col,
     users_col,
@@ -29,6 +30,30 @@ sio = socketio.AsyncServer(
 _sid_user: dict[str, dict] = {}
 # user_id → set of sids
 _user_sids: dict[str, set] = {}
+
+# ── Lockdown state ──────────────────────────────────────────────────────────────────────
+
+_lockdown_active: bool = False
+
+
+async def _load_lockdown_state() -> None:
+    """Load persisted lockdown flag from DB at startup."""
+    global _lockdown_active
+    doc = await system_config_col().find_one({"key": "lockdown"})
+    _lockdown_active = bool(doc["value"]) if doc else False
+
+
+async def set_lockdown_state(active: bool) -> None:
+    """Persist lockdown flag and broadcast to all connected clients."""
+    global _lockdown_active
+    _lockdown_active = active
+    await system_config_col().update_one(
+        {"key": "lockdown"},
+        {"$set": {"key": "lockdown", "value": active}},
+        upsert=True,
+    )
+    event = "lockdown_activated" if active else "lockdown_deactivated"
+    await sio.emit(event, {"active": active})
 
 
 async def _auth_sid(sid: str, environ: dict) -> dict | None:
@@ -125,6 +150,10 @@ async def leave_room(sid, data):
 
 @sio.event
 async def send_message(sid, data):
+    if _lockdown_active:
+        await sio.emit("error", {"message": "System is in lockdown. Messaging is disabled."}, to=sid)
+        return
+
     user = _sid_user.get(sid)
     if not user:
         return
@@ -135,9 +164,19 @@ async def send_message(sid, data):
         return
 
     # Check mute
-    room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
+    try:
+        room_oid = str_to_oid(room_id)
+        room = await rooms_col().find_one({"_id": room_oid})
+    except ValueError:
+        await sio.emit("error", {"message": f"Invalid Room ID '{room_id}'"}, to=sid)
+        return
+
     if room:
         member = next((m for m in room.get("members", []) if m["user_id"] == user["id"]), None)
+        if not member and user.get("org_role") != "admin":
+            await sio.emit("error", {"message": "You are not a member of this room."}, to=sid)
+            return
+
         if member and member.get("muted"):
             await sio.emit("error", {"message": "You are muted in this room."}, to=sid)
             return
@@ -190,6 +229,10 @@ async def typing_stop(sid, data):
 
 @sio.event
 async def toggle_reaction(sid, data):
+    if _lockdown_active:
+        await sio.emit("error", {"message": "System is in lockdown. Reactions are disabled."}, to=sid)
+        return
+
     user = _sid_user.get(sid)
     if not user:
         return
@@ -197,6 +240,25 @@ async def toggle_reaction(sid, data):
     emoji = data.get("emoji")
     if not message_id or not emoji:
         return
+
+    try:
+        msg_oid = str_to_oid(message_id)
+        msg = await messages_col().find_one({"_id": msg_oid})
+    except ValueError:
+        await sio.emit("error", {"message": f"Invalid Message ID '{message_id}'"}, to=sid)
+        return
+
+    if not msg:
+        return
+
+    room_id = msg.get("room_id")
+    if room_id:
+        room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
+        if room:
+            member = next((m for m in room.get("members", []) if m["user_id"] == user["id"]), None)
+            if not member and user.get("org_role") != "admin":
+                await sio.emit("error", {"message": "You are not a member of this room."}, to=sid)
+                return
 
     existing = await reactions_col().find_one({"message_id": message_id})
     if not existing:
@@ -212,15 +274,18 @@ async def toggle_reaction(sid, data):
             users.remove(user["name"])
         else:
             users.append(user["name"])
-        reactions[emoji] = users
+        
+        # Cleanup empty lists
+        if not users:
+            reactions.pop(emoji, None)
+        else:
+            reactions[emoji] = users
+
         await reactions_col().update_one(
             {"message_id": message_id},
             {"$set": {"reactions": reactions}}
         )
 
-    # Find which room this message belongs to
-    msg = await messages_col().find_one({"_id": str_to_oid(message_id)})
-    room_id = msg["room_id"] if msg else None
     if room_id:
         await sio.emit("reaction_update", {"message_id": message_id, "reactions": reactions}, room=room_id)
 
@@ -229,6 +294,10 @@ async def toggle_reaction(sid, data):
 
 @sio.event
 async def thread_reply(sid, data):
+    if _lockdown_active:
+        await sio.emit("error", {"message": "System is in lockdown. Replies are disabled."}, to=sid)
+        return
+
     user = _sid_user.get(sid)
     if not user:
         return
@@ -237,9 +306,27 @@ async def thread_reply(sid, data):
     if not parent_id or not text:
         return
 
-    parent = await messages_col().find_one({"_id": str_to_oid(parent_id)})
+    try:
+        parent_oid = str_to_oid(parent_id)
+        parent = await messages_col().find_one({"_id": parent_oid})
+    except ValueError:
+        await sio.emit("error", {"message": f"Invalid Parent Message ID '{parent_id}'"}, to=sid)
+        return
+
     if not parent:
         return
+
+    room_id = parent.get("room_id")
+    if room_id:
+        room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
+        if room:
+            member = next((m for m in room.get("members", []) if m["user_id"] == user["id"]), None)
+            if not member and user.get("org_role") != "admin":
+                await sio.emit("error", {"message": "You are not a member of this room."}, to=sid)
+                return
+            if member and member.get("muted"):
+                await sio.emit("error", {"message": "You are muted in this room."}, to=sid)
+                return
 
     now = int(time.time() * 1000)
     doc = {
@@ -293,6 +380,10 @@ async def presence_update(sid, data):
 
 @sio.event
 async def poll_vote(sid, data):
+    if _lockdown_active:
+        await sio.emit("error", {"message": "System is in lockdown. Voting is disabled."}, to=sid)
+        return
+
     user = _sid_user.get(sid)
     if not user:
         return
@@ -301,9 +392,24 @@ async def poll_vote(sid, data):
     if not poll_id or not option_id:
         return
 
-    poll = await polls_col().find_one({"_id": str_to_oid(poll_id)})
+    try:
+        poll_oid = str_to_oid(poll_id)
+        poll = await polls_col().find_one({"_id": poll_oid})
+    except ValueError:
+        await sio.emit("error", {"message": f"Invalid Poll ID '{poll_id}'"}, to=sid)
+        return
+
     if not poll or poll.get("closed"):
         return
+
+    room_id = poll.get("room_id")
+    if room_id:
+        room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
+        if room:
+            member = next((m for m in room.get("members", []) if m["user_id"] == user["id"]), None)
+            if not member and user.get("org_role") != "admin":
+                await sio.emit("error", {"message": "You are not a member of this room."}, to=sid)
+                return
 
     # Check already voted
     for opt in poll["options"]:
@@ -311,10 +417,10 @@ async def poll_vote(sid, data):
             return
 
     await polls_col().update_one(
-        {"_id": str_to_oid(poll_id), "options.id": option_id},
+        {"_id": poll_oid, "options.id": option_id},
         {"$inc": {"options.$.votes": 1}, "$push": {"options.$.voters": user["id"]}}
     )
-    updated = await polls_col().find_one({"_id": str_to_oid(poll_id)})
+    updated = await polls_col().find_one({"_id": poll_oid})
     room_id = updated.get("room_id")
     if room_id:
         await sio.emit("poll_update", doc_to_dict(updated), room=room_id)

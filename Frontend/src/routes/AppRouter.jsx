@@ -10,11 +10,15 @@ import AuditLogPage from '../pages/admin/AuditLogPage'
 import TempRoomManagerPage from '../pages/admin/TempRoomManagerPage'
 import BookmarksPage from '../pages/user/BookmarksPage'
 import PreferencesPage from '../pages/user/PreferencesPage'
+import WhitelistPage from '../pages/admin/WhitelistPage'
+import SetupPage from '../pages/setup/SetupPage'
+import ManagerDashboardPage from '../pages/manager/ManagerDashboardPage'
 
 function AppRouter() {
   return (
     <Routes>
       <Route path="/" element={<Navigate to="/chat" replace />} />
+      <Route path="/setup" element={<SetupPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />
 
@@ -22,6 +26,7 @@ function AppRouter() {
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/user/bookmarks" element={<BookmarksPage />} />
         <Route path="/user/preferences" element={<PreferencesPage />} />
+        <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
       </Route>
 
       <Route element={<AdminRoute />}>
@@ -29,6 +34,7 @@ function AppRouter() {
         <Route path="/admin/moderation" element={<ModerationPage />} />
         <Route path="/admin/audit-log" element={<AuditLogPage />} />
         <Route path="/admin/temp-rooms" element={<TempRoomManagerPage />} />
+        <Route path="/admin/whitelist" element={<WhitelistPage />} />
       </Route>
 
       <Route path="*" element={<Navigate to="/" replace />} />

@@ -6,9 +6,10 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.core.config import settings
 from app.db.mongo import close_client, get_client
-from app.routers import admin, auth, messages, polls, presence, reactions, rooms, search, temprooms, threads
-from app.websockets.socket_manager import sio
+from app.routers import admin, auth, messages, org, polls, presence, reactions, rooms, search, temprooms, threads
+from app.websockets.socket_manager import _load_lockdown_state, sio
 from app.background.temproom_expiry import run_scheduler
+from app.middleware.lockdown import lockdown_middleware
 
 # ── FastAPI App ───────────────────────────────────────────────────────────────
 
@@ -22,9 +23,12 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+from starlette.middleware.base import BaseHTTPMiddleware
+app.add_middleware(BaseHTTPMiddleware, dispatch=lockdown_middleware)
+
 # ── Register all REST routers under /api prefix ───────────────────────────────
 
-for router_module in [auth, rooms, messages, threads, reactions, polls, temprooms, presence, admin, search]:
+for router_module in [org, auth, rooms, messages, threads, reactions, polls, temprooms, presence, admin, search]:
     app.include_router(router_module.router, prefix="/api")
 
 # ── Lifespan (startup / shutdown) ─────────────────────────────────────────────
@@ -42,6 +46,8 @@ async def startup():
     await db["polls"].create_index("room_id")
     await db["audit_logs"].create_index("timestamp")
     await db["temprooms"].create_index("expires_at")
+    # Load persisted lockdown state from DB
+    await _load_lockdown_state()
     # Start background scheduler
     asyncio.create_task(run_scheduler())
     print("IntraLink API started ✓")
