@@ -6,6 +6,7 @@ const initialState = {
   messagesByRoom: {},
   typingByRoom: {},
   pinnedByRoom: {},
+  isLockdown: false,
 }
 
 const messagingSlice = createSlice({
@@ -14,6 +15,9 @@ const messagingSlice = createSlice({
   reducers: {
     setActiveRoom: (state, action) => {
       state.activeRoomId = action.payload
+    },
+    setLockdownState: (state, action) => {
+      state.isLockdown = action.payload
     },
     setRooms: (state, action) => {
       state.rooms = action.payload
@@ -133,10 +137,12 @@ export const {
   setThreadCount,
   addPinnedMessage,
   removeExpiredMessages,
+  setLockdownState,
 } = messagingSlice.actions
 
 export const selectRooms = (state) => state.messaging.rooms
 export const selectActiveRoomId = (state) => state.messaging.activeRoomId
+export const selectIsLockdown = (state) => state.messaging.isLockdown
 
 const selectTypingByRoom = (state) => state.messaging.typingByRoom
 const selectPinnedByRoom = (state) => state.messaging.pinnedByRoom

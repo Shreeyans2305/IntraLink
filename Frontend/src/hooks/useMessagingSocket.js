@@ -4,7 +4,7 @@ import { useSocket } from './useSocket'
 import { receiveMessage, setThreadCount, setTypingUsers } from '../features/messaging/messagingSlice'
 import { setReactions } from '../features/reactions/reactionSlice'
 import { receiveThreadReply } from '../features/threads/threadSlice'
-import { updatePoll } from '../features/polls/pollSlice'
+import { updatePoll, createPoll, closePoll } from '../features/polls/pollSlice'
 
 export function useMessagingSocket() {
   const dispatch = useDispatch()
@@ -65,7 +65,33 @@ export function useMessagingSocket() {
     }
 
     const handlePollUpdate = (data) => {
-      dispatch(updatePoll(data))
+      dispatch(updatePoll({
+        id: data.id || data._id,
+        roomId: data.room_id,
+        question: data.question,
+        options: data.options,
+        anonymous: data.anonymous,
+        closed: data.closed,
+        created_by: data.created_by,
+        created_at: data.created_at,
+      }))
+    }
+
+    const handlePollCreated = (data) => {
+      dispatch(createPoll({
+        id: data.id || data._id,
+        roomId: data.room_id,
+        question: data.question,
+        options: data.options,
+        anonymous: data.anonymous,
+        closed: data.closed,
+        created_by: data.created_by,
+        created_at: data.created_at,
+      }))
+    }
+
+    const handlePollClosed = (data) => {
+      dispatch(closePoll(data.id || data._id))
     }
 
     const handleSystemMessage = (data) => {
@@ -82,12 +108,22 @@ export function useMessagingSocket() {
       }))
     }
 
+    const handleLockdownStatus = (data) => {
+      dispatch({ type: 'messaging/setLockdownState', payload: data.active })
+    }
+
     socket.on('new_message', handleNewMessage)
     socket.on('reaction_update', handleReactionUpdate)
     socket.on('thread_update', handleThreadUpdate)
     socket.on('typing_users', handleTypingUsers)
     socket.on('poll_update', handlePollUpdate)
+    socket.on('poll_created', handlePollCreated)
+    socket.on('poll_closed', handlePollClosed)
     socket.on('system_message', handleSystemMessage)
+
+    socket.on('lockdown_status', handleLockdownStatus)
+    socket.on('lockdown_activated', () => dispatch({ type: 'messaging/setLockdownState', payload: true }))
+    socket.on('lockdown_deactivated', () => dispatch({ type: 'messaging/setLockdownState', payload: false }))
 
     return () => {
       socket.off('new_message', handleNewMessage)
@@ -95,7 +131,13 @@ export function useMessagingSocket() {
       socket.off('thread_update', handleThreadUpdate)
       socket.off('typing_users', handleTypingUsers)
       socket.off('poll_update', handlePollUpdate)
+      socket.off('poll_created', handlePollCreated)
+      socket.off('poll_closed', handlePollClosed)
       socket.off('system_message', handleSystemMessage)
+      
+      socket.off('lockdown_status', handleLockdownStatus)
+      socket.off('lockdown_activated')
+      socket.off('lockdown_deactivated')
     }
   }, [dispatch, socket, connected])
 

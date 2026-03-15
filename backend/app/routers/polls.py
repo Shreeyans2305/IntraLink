@@ -50,7 +50,11 @@ async def create_poll(
     }
     result = await polls_col().insert_one(doc)
     doc["_id"] = result.inserted_id
-    return doc_to_dict(doc)
+    out = doc_to_dict(doc)
+    
+    from app.websockets.socket_manager import sio
+    await sio.emit("poll_created", out, room=room_id)
+    return out
 
 
 @router.post("/{poll_id}/vote")
@@ -102,4 +106,8 @@ async def close_poll(
         {"_id": str_to_oid(poll_id)},
         {"$set": {"closed": True}}
     )
+    from app.websockets.socket_manager import sio
+    updated = await polls_col().find_one({"_id": str_to_oid(poll_id)})
+    if updated:
+        await sio.emit("poll_closed", doc_to_dict(updated), room=room_id)
     return {"ok": True}

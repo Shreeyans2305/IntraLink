@@ -46,10 +46,11 @@ import { useAuth } from '../../features/auth/useAuth'
 import { commandRegistry } from '../../features/commands/commandRegistry'
 import { useCommands } from '../../features/commands/useCommands'
 import { useFiles } from '../../features/files/useFiles'
-import { addPinnedMessage, addSystemMessage, removeExpiredMessages, selectActiveRoomId, selectMessagesForActiveRoom, selectPinnedIds, selectRooms, selectTypingUsers, setActiveRoom, setRooms, setMessages, sendMessage } from '../../features/messaging/messagingSlice'
+import { addPinnedMessage, addSystemMessage, removeExpiredMessages, selectActiveRoomId, selectMessagesForActiveRoom, selectPinnedIds, selectRooms, selectTypingUsers, setActiveRoom, setRooms, setMessages, sendMessage, selectIsLockdown } from '../../features/messaging/messagingSlice'
 import { markAllRead, markRead, selectNotifications, selectUnreadCount } from '../../features/notifications/notifSlice'
 import { setCustomStatus, selectPresence, setStatus } from '../../features/presence/presenceSlice'
-import { selectPolls, votePoll, createPoll } from '../../features/polls/pollSlice'
+import { selectPolls, votePoll, createPoll, updatePoll } from '../../features/polls/pollSlice'
+import { fetchPollsApi, createPollApi } from '../../features/polls/pollApi'
 import { selectReactionsByMessage } from '../../features/reactions/reactionSlice'
 import { closeThread, openThread, selectThreadState } from '../../features/threads/threadSlice'
 import { createTempRoom, selectTempRooms, setTempRooms } from '../../features/temprooms/tempRoomSlice'
@@ -101,6 +102,7 @@ function ChatPage() {
   const messagesByRoom = useSelector((state) => state.messaging.messagesByRoom)
   const typingUsers = useSelector(selectTypingUsers)
   const pinnedIds = useSelector(selectPinnedIds)
+  const isLockdown = useSelector(selectIsLockdown)
 
   const tempRooms = useSelector(selectTempRooms)
   const threadState = useSelector(selectThreadState)
@@ -170,6 +172,25 @@ function ChatPage() {
       if (activeRoomId && socket) {
         const data = await fetchMessages(activeRoomId)
         dispatch(setMessages({ roomId: activeRoomId, messages: data }))
+
+        try {
+          const pollsData = await fetchPollsApi(activeRoomId)
+          pollsData.forEach(p => {
+            dispatch(updatePoll({
+              id: p.id || p._id,
+              roomId: p.room_id,
+              question: p.question,
+              options: p.options,
+              anonymous: p.anonymous,
+              closed: p.closed,
+              created_by: p.created_by,
+              created_at: p.created_at,
+            }))
+          })
+        } catch (err) {
+          console.error('Failed to load active polls', err)
+        }
+
         socket.emit('join_room', { room_id: activeRoomId })
       }
     }
@@ -357,7 +378,9 @@ function ChatPage() {
 
   const orderedRooms = useMemo(() => {
     const standardRooms = rooms.filter((room) => room.type !== 'temporary')
-    return roomOrder.map((roomId) => standardRooms.find((room) => room.id === roomId)).filter(Boolean)
+    const ordered = roomOrder.map((roomId) => standardRooms.find((room) => room.id === roomId)).filter(Boolean)
+    const missing = standardRooms.filter((room) => !roomOrder.includes(room.id))
+    return [...ordered, ...missing]
   }, [roomOrder, rooms])
 
   const activeThreadItems = useMemo(() => {
@@ -758,8 +781,23 @@ function ChatPage() {
     socket.emit('thread_reply', { parent_message_id: parentId, text })
   }
 
-  const handleCreatePoll = (payload) => {
-    dispatch(createPoll(payload))
+  const handleCreatePoll = async (payload) => {
+    try {
+      await createPollApi(activeRoomId, {
+        question: payload.question,
+        options: payload.options.map((o) => ({ label: o.label })),
+        anonymous: payload.anonymous,
+        closeAt: payload.closeAt,
+      })
+    } catch (err) {
+      setToast({ type: 'error', message: err?.response?.data?.detail || 'Failed to create poll' })
+    }
+  }
+
+  const handleVotePoll = (pollId, optionId) => {
+    if (socket) {
+      socket.emit('poll_vote', { poll_id: pollId, option_id: optionId })
+    }
   }
 
   const handleToggleSelection = (messageId) => {
@@ -836,7 +874,7 @@ function ChatPage() {
     setGlobalSearchQuery('')
   }
 
-  const pollForRoom = polls.find((poll) => poll.roomId === activeRoomId)
+  const pollForRoom = polls.find((poll) => poll.roomId === activeRoomId && !poll.closed)
 
   return (
     <div className="app-page relative flex h-screen flex-col">
@@ -1152,6 +1190,13 @@ function ChatPage() {
           </div>
 
           {roomIsLocked ? <RoomExpiredBanner /> : null}
+          {isLockdown ? (
+            <div className="mb-3 flex items-center justify-center rounded-lg border border-red-300 bg-red-50 p-3 shadow-sm">
+              <span className="text-sm font-semibold text-red-800">
+                🚨 Wired and Secure Mode: System is in Lockdown. Internal communication only.
+              </span>
+            </div>
+          ) : null}
 
           {selectionMode ? (
             <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
@@ -1228,7 +1273,7 @@ function ChatPage() {
 
           {pollForRoom ? (
             <div className="mb-3">
-              <PollCard poll={pollForRoom} onVote={(pollId, optionId) => dispatch(votePoll({ pollId, optionId }))} />
+              <PollCard poll={pollForRoom} onVote={handleVotePoll} />
             </div>
           ) : null}
 

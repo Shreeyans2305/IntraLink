@@ -1,7 +1,11 @@
+import { useSelector } from 'react-redux'
+import { selectCurrentUser } from '../../features/auth/authSlice'
 import Button from '../ui/Button'
 import PollResults from './PollResults'
 
 function PollCard({ poll, onVote }) {
+  const currentUser = useSelector(selectCurrentUser)
+  const hasVoted = poll.options.some((opt) => opt.voters?.includes(currentUser?.id))
   return (
     <div className="rounded-lg border border-slate-200 bg-white p-3">
       <div className="mb-2 flex items-start justify-between gap-3">
@@ -19,9 +23,9 @@ function PollCard({ poll, onVote }) {
         {poll.options.map((option) => (
           <Button
             key={option.id}
-            variant="secondary"
-            className="text-xs"
-            disabled={poll.closed}
+            variant={hasVoted ? 'ghost' : 'secondary'}
+            className={`text-xs ${hasVoted && option.voters?.includes(currentUser?.id) ? 'bg-indigo-50 text-indigo-700 font-semibold' : ''}`}
+            disabled={poll.closed || hasVoted}
             onClick={() => onVote(poll.id, option.id)}
           >
             {option.label}

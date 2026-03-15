@@ -115,6 +115,7 @@ async def connect(sid, environ, auth):
         return False
     user["id"] = str(user.pop("_id"))
     _register_sid(sid, user)
+    await sio.emit("lockdown_status", {"active": _lockdown_active}, to=sid)
     return True
 
 
@@ -150,9 +151,6 @@ async def leave_room(sid, data):
 
 @sio.event
 async def send_message(sid, data):
-    if _lockdown_active:
-        await sio.emit("error", {"message": "System is in lockdown. Messaging is disabled."}, to=sid)
-        return
 
     user = _sid_user.get(sid)
     if not user:
@@ -229,9 +227,6 @@ async def typing_stop(sid, data):
 
 @sio.event
 async def toggle_reaction(sid, data):
-    if _lockdown_active:
-        await sio.emit("error", {"message": "System is in lockdown. Reactions are disabled."}, to=sid)
-        return
 
     user = _sid_user.get(sid)
     if not user:
@@ -294,9 +289,6 @@ async def toggle_reaction(sid, data):
 
 @sio.event
 async def thread_reply(sid, data):
-    if _lockdown_active:
-        await sio.emit("error", {"message": "System is in lockdown. Replies are disabled."}, to=sid)
-        return
 
     user = _sid_user.get(sid)
     if not user:
@@ -380,16 +372,15 @@ async def presence_update(sid, data):
 
 @sio.event
 async def poll_vote(sid, data):
-    if _lockdown_active:
-        await sio.emit("error", {"message": "System is in lockdown. Voting is disabled."}, to=sid)
-        return
-
+    print(f"DEBUG poll_vote received from {sid} data={data}")
     user = _sid_user.get(sid)
     if not user:
+        print(f"DEBUG no user found for sid {sid}")
         return
     poll_id = data.get("poll_id")
     option_id = data.get("option_id")
     if not poll_id or not option_id:
+        print(f"DEBUG missing poll_id {poll_id} or option_id {option_id}")
         return
 
     try:
