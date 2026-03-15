@@ -110,4 +110,4 @@ async def close_poll(
     updated = await polls_col().find_one({"_id": str_to_oid(poll_id)})
     if updated:
         await sio.emit("poll_closed", doc_to_dict(updated), room=room_id)
-    return {"ok": True}
+    return {"status": "success"}

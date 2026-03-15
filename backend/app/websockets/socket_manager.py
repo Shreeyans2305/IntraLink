@@ -407,10 +407,20 @@ async def poll_vote(sid, data):
         if user["id"] in opt.get("voters", []):
             return
 
+    new_options = []
+    for opt in poll.get("options", []):
+        if opt["id"] == option_id:
+            opt["votes"] = opt.get("votes", 0) + 1
+            voters = opt.get("voters", [])
+            voters.append(user["id"])
+            opt["voters"] = voters
+        new_options.append(opt)
+
     await polls_col().update_one(
-        {"_id": poll_oid, "options.id": option_id},
-        {"$inc": {"options.$.votes": 1}, "$push": {"options.$.voters": user["id"]}}
+        {"_id": poll_oid},
+        {"$set": {"options": new_options}}
     )
+
     updated = await polls_col().find_one({"_id": poll_oid})
     room_id = updated.get("room_id")
     if room_id:
