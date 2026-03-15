@@ -3,7 +3,7 @@ function ReactionTooltip({ users }) {
     return null
   }
 
-  return <span className="text-[11px] text-slate-500">{users.join(', ')}</span>
+  return <span className="text-[11px] text-zinc-400">{users.join(', ')}</span>
 }
 
 export default ReactionTooltip

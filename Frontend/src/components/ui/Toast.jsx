@@ -4,8 +4,8 @@ function Toast({ message, type = 'info' }) {
   }
 
   const typeClass = {
-    info: 'bg-slate-900 text-white',
-    warning: 'bg-amber-500 text-slate-900',
+    info: 'bg-zinc-950 text-white',
+    warning: 'bg-amber-500 text-zinc-100',
     error: 'bg-red-600 text-white',
   }[type]
 

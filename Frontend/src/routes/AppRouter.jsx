@@ -9,7 +9,7 @@ import ModerationPage from '../pages/admin/ModerationPage'
 import AuditLogPage from '../pages/admin/AuditLogPage'
 import TempRoomManagerPage from '../pages/admin/TempRoomManagerPage'
 import BookmarksPage from '../pages/user/BookmarksPage'
-import PreferencesPage from '../pages/user/PreferencesPage'
+import PreferencesPage from '../pages/user/PreferencesPage' // Settings page
 import WhitelistPage from '../pages/admin/WhitelistPage'
 import SetupPage from '../pages/setup/SetupPage'
 import ManagerDashboardPage from '../pages/manager/ManagerDashboardPage'
@@ -25,7 +25,7 @@ function AppRouter() {
       <Route element={<ProtectedRoute />}>
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/user/bookmarks" element={<BookmarksPage />} />
-        <Route path="/user/preferences" element={<PreferencesPage />} />
+        <Route path="/user/settings" element={<PreferencesPage />} />
         <Route path="/manager/dashboard" element={<ManagerDashboardPage />} />
       </Route>
 

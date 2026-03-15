@@ -40,29 +40,29 @@ function AssignManagerWidget() {
   })
 
   return (
-    <div className="rounded-lg border border-slate-200 bg-white p-3 xl:col-span-3 mt-0 mb-4">
+    <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 xl:col-span-3 mt-0 mb-4">
       <div className="mb-3 flex items-center justify-between">
-        <h3 className="text-sm font-semibold text-slate-800">Assign Room Manager</h3>
-        <span className="text-xs text-slate-500">Elevate user privileges for specific rooms</span>
+        <h3 className="text-sm font-semibold text-zinc-200">Assign Room Manager</h3>
+        <span className="text-xs text-zinc-400">Elevate user privileges for specific rooms</span>
       </div>
       <div className="flex flex-col md:flex-row gap-3 items-end">
         <div className="flex-1 w-full">
-          <label className="mb-1 block text-xs text-slate-500">Pick a Room</label>
+          <label className="mb-1 block text-xs text-zinc-400">Pick a Room</label>
           <select 
             value={selectedRoom} 
             onChange={e => setSelectedRoom(e.target.value)}
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-cyan-500 outline-none"
+            className="w-full rounded-md border border-zinc-800 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm focus:border-brand-500 outline-none"
           >
             <option value="">-- Select Room --</option>
             {rooms.map(r => <option key={r.id} value={r.id}>#{r.name}</option>)}
           </select>
         </div>
         <div className="flex-1 w-full">
-          <label className="mb-1 block text-xs text-slate-500">Pick a User</label>
+          <label className="mb-1 block text-xs text-zinc-400">Pick a User</label>
           <select 
             value={selectedUser} 
             onChange={e => setSelectedUser(e.target.value)}
-            className="w-full rounded-md border border-slate-200 px-3 py-2 text-sm focus:border-cyan-500 outline-none"
+            className="w-full rounded-md border border-zinc-800 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm focus:border-brand-500 outline-none"
           >
             <option value="">-- Select User --</option>
             {users.map(u => <option key={u.id} value={u.id}>{u.name} ({u.email})</option>)}
@@ -87,9 +87,9 @@ function BlastModal({ open, onClose, onConfirm }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="w-full max-w-sm rounded-xl border border-red-500/30 bg-slate-900 p-5 shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-red-500/30 bg-zinc-950 p-5 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
         <h3 className="mb-2 text-lg font-semibold text-white">💥 Blast Org</h3>
-        <p className="mb-4 text-sm text-slate-400">
+        <p className="mb-4 text-sm text-zinc-400">
           WARNING: This will wipe all messages, rooms, and temp rooms. Enter a strong passphrase to encrypt the org blueprint.
         </p>
         <input 
@@ -97,10 +97,10 @@ function BlastModal({ open, onClose, onConfirm }) {
           value={passphrase}
           onChange={e => setPassphrase(e.target.value)}
           placeholder="Encryption Passphrase"
-          className="mb-4 w-full rounded-md border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:border-red-500 outline-none"
+          className="mb-4 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-red-500 outline-none"
         />
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} className="text-slate-300">Cancel</Button>
+          <Button variant="ghost" onClick={onClose} className="text-zinc-300">Cancel</Button>
           <Button disabled={!passphrase} onClick={() => onConfirm(passphrase)} className="bg-red-600 hover:bg-red-500 text-white">
             Wipe & Encrypt
           </Button>
@@ -117,27 +117,27 @@ function RestoreModal({ open, onClose, onConfirm }) {
   if (!open) return null
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm px-4">
-      <div className="w-full max-w-sm rounded-xl border border-cyan-500/30 bg-slate-900 p-5 shadow-2xl">
+      <div className="w-full max-w-sm rounded-xl border border-cyan-500/30 bg-zinc-950 p-5 shadow-[0_0_40px_rgba(0,0,0,0.5)]">
         <h3 className="mb-2 text-lg font-semibold text-white">📥 Restore Blueprint</h3>
-        <p className="mb-4 text-sm text-slate-400">
+        <p className="mb-4 text-sm text-zinc-400">
           Upload your `.inm` blueprint and enter the passphrase used to decrypt it.
         </p>
         <input 
           type="file"
           accept=".inm"
           onChange={e => setFile(e.target.files[0])}
-          className="mb-3 w-full text-sm text-slate-300"
+          className="mb-3 w-full text-sm text-zinc-300"
         />
         <input 
           type="password"
           value={passphrase}
           onChange={e => setPassphrase(e.target.value)}
           placeholder="Decryption Passphrase"
-          className="mb-4 w-full rounded-md border border-white/10 bg-slate-800 px-3 py-2 text-sm text-white focus:border-cyan-500 outline-none"
+          className="mb-4 w-full rounded-md border border-zinc-800 bg-zinc-900 px-3 py-2 text-sm text-white focus:border-brand-500 outline-none"
         />
         <div className="flex justify-end gap-2">
-          <Button variant="ghost" onClick={onClose} className="text-slate-300">Cancel</Button>
-          <Button disabled={!passphrase || !file} onClick={() => onConfirm(file, passphrase)} className="bg-cyan-600 hover:bg-cyan-500 text-white">
+          <Button variant="ghost" onClick={onClose} className="text-zinc-300">Cancel</Button>
+          <Button disabled={!passphrase || !file} onClick={() => onConfirm(file, passphrase)} className="bg-brand-500 hover:bg-brand-400 transition-colors text-white">
             Restore
           </Button>
         </div>
@@ -266,26 +266,26 @@ function DashboardPage() {
   }
 
   return (
-    <div className="app-page flex min-h-screen">
-      <aside className="app-surface w-64 border-r p-4">
-        <h1 className="mb-4 text-lg font-semibold text-slate-900">IntraLink Admin</h1>
+    <div className="app-page bg-zinc-950 text-zinc-200 flex min-h-screen">
+      <aside className="app-surface bg-zinc-900/20 w-64 border-r p-4">
+        <h1 className="mb-4 text-lg font-semibold text-zinc-100">IntraLink Admin</h1>
         <nav className="space-y-2 text-sm">
-          <Link to="/admin/dashboard" className="block rounded-md border border-slate-200 px-3 py-2">
+          <Link to="/admin/dashboard" className="block rounded-md border border-zinc-800 px-3 py-2">
             📊 Analytics
           </Link>
-          <Link to="/admin/moderation" className="block rounded-md border border-slate-200 px-3 py-2">
+          <Link to="/admin/moderation" className="block rounded-md border border-zinc-800 px-3 py-2">
             🛡 Moderation
           </Link>
-          <Link to="/admin/audit-log" className="block rounded-md border border-slate-200 px-3 py-2">
+          <Link to="/admin/audit-log" className="block rounded-md border border-zinc-800 px-3 py-2">
             📋 Audit Log
           </Link>
-          <Link to="/admin/temp-rooms" className="block rounded-md border border-slate-200 px-3 py-2">
+          <Link to="/admin/temp-rooms" className="block rounded-md border border-zinc-800 px-3 py-2">
             ⏳ Temp Rooms
           </Link>
-          <Link to="/admin/whitelist" className="block rounded-md border border-slate-200 px-3 py-2">
+          <Link to="/admin/whitelist" className="block rounded-md border border-zinc-800 px-3 py-2">
             📋 Whitelist
           </Link>
-          <Link to="/chat" className="block rounded-md border border-slate-200 px-3 py-2">
+          <Link to="/chat" className="block rounded-md border border-zinc-800 px-3 py-2">
             ← Back to Chat
           </Link>
         </nav>
@@ -294,8 +294,8 @@ function DashboardPage() {
       <main className="flex-1 space-y-4 p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div>
-            <h2 className="text-xl font-semibold text-slate-900">Analytics Dashboard</h2>
-            <p className="text-sm text-slate-500">Live workspace metrics, moderation pressure, and temp room activity.</p>
+            <h2 className="text-xl font-semibold text-zinc-100">Analytics Dashboard</h2>
+            <p className="text-sm text-zinc-400">Live workspace metrics, moderation pressure, and temp room activity.</p>
           </div>
           <div className="flex gap-2">
             {['today', '7d', '30d'].map((option) => (
@@ -319,7 +319,7 @@ function DashboardPage() {
 
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-2">
           {refreshing ? (
-            <div className="rounded-lg border border-slate-200 bg-white p-3">
+            <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
               <SkeletonBlock className="mb-3 h-4 w-32" />
               <SkeletonBlock className="h-56 w-full" />
             </div>
@@ -332,35 +332,35 @@ function DashboardPage() {
         <section className="grid grid-cols-1 gap-4 xl:grid-cols-3">
           <ActivityHeatmap values={heatmapValues} />
 
-          <div className="rounded-lg border border-slate-200 bg-white p-3 xl:col-span-2">
+          <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 xl:col-span-2">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-slate-800">Quick Actions</h3>
-              <span className="text-xs text-slate-500">Admin shortcuts</span>
+              <h3 className="text-sm font-semibold text-zinc-200">Quick Actions</h3>
+              <span className="text-xs text-zinc-400">Admin shortcuts</span>
             </div>
             <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
-              <Link to="/admin/audit-log" className="rounded-lg border border-slate-200 p-3 hover:bg-slate-50">
-                <p className="text-sm font-semibold text-slate-900">Audit Timeline</p>
-                <p className="mt-1 text-xs text-slate-500">Inspect live events and anomaly spikes.</p>
+              <Link to="/admin/audit-log" className="rounded-lg border border-zinc-800 p-3 hover:bg-zinc-800/40 transition-colors">
+                <p className="text-sm font-semibold text-zinc-100">Audit Timeline</p>
+                <p className="mt-1 text-xs text-zinc-400">Inspect live events and anomaly spikes.</p>
               </Link>
-              <Link to="/admin/moderation" className="rounded-lg border border-slate-200 p-3 hover:bg-slate-50">
-                <p className="text-sm font-semibold text-slate-900">Moderation Queue</p>
-                <p className="mt-1 text-xs text-slate-500">Filter, inspect, and resolve flagged activity.</p>
+              <Link to="/admin/moderation" className="rounded-lg border border-zinc-800 p-3 hover:bg-zinc-800/40 transition-colors">
+                <p className="text-sm font-semibold text-zinc-100">Moderation Queue</p>
+                <p className="mt-1 text-xs text-zinc-400">Filter, inspect, and resolve flagged activity.</p>
               </Link>
-              <Link to="/admin/temp-rooms" className="rounded-lg border border-slate-200 p-3 hover:bg-slate-50">
-                <p className="text-sm font-semibold text-slate-900">Temp Room Policies</p>
-                <p className="mt-1 text-xs text-slate-500">Watch countdowns and enforce lifecycle rules.</p>
+              <Link to="/admin/temp-rooms" className="rounded-lg border border-zinc-800 p-3 hover:bg-zinc-800/40 transition-colors">
+                <p className="text-sm font-semibold text-zinc-100">Temp Room Policies</p>
+                <p className="mt-1 text-xs text-zinc-400">Watch countdowns and enforce lifecycle rules.</p>
               </Link>
               <button 
                 onClick={handleToggleLockdown}
-                className={`rounded-lg border p-3 text-left transition-colors ${lockdownActive ? 'border-red-300 bg-red-50 hover:bg-red-100' : 'border-slate-200 hover:bg-slate-50'}`}
+                className={`rounded-lg border p-3 text-left transition-colors ${lockdownActive ? 'border-red-500/30 bg-red-500/10 hover:bg-red-500/20 transition-colors' : 'border-zinc-800 hover:bg-zinc-800/40 transition-colors'}`}
               >
                 <div className="flex items-center justify-between">
-                  <p className={`text-sm font-semibold ${lockdownActive ? 'text-red-700' : 'text-slate-900'}`}>
+                  <p className={`text-sm font-semibold ${lockdownActive ? 'text-red-400' : 'text-zinc-100'}`}>
                     {lockdownActive ? 'Disable Lockdown' : 'Enable Lockdown'}
                   </p>
                   <div className={`h-2.5 w-2.5 rounded-full ${lockdownActive ? 'bg-red-500 animate-pulse' : 'bg-slate-300'}`} />
                 </div>
-                <p className={`mt-1 text-xs ${lockdownActive ? 'text-red-600' : 'text-slate-500'}`}>
+                <p className={`mt-1 text-xs ${lockdownActive ? 'text-red-500' : 'text-zinc-400'}`}>
                   {lockdownActive 
                     ? 'System locked down. Only admin actions permitted.'
                     : 'Emergency mode to halt all messaging instantly.'}
@@ -369,24 +369,24 @@ function DashboardPage() {
             </div>
           </div>
 
-          <div className="rounded-lg border border-red-200 bg-red-50 p-3 xl:col-span-1">
+          <div className="rounded-lg border border-red-500/20 bg-red-500/10 p-3 xl:col-span-1">
             <div className="mb-3 flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-red-800">Danger Zone</h3>
+              <h3 className="text-sm font-semibold text-red-400">Danger Zone</h3>
             </div>
             <div className="flex flex-col gap-3">
               <button 
                 onClick={() => setShowBlastModal(true)}
-                className="rounded-lg border border-red-300 bg-white p-3 text-left transition-colors hover:bg-red-100"
+                className="rounded-lg border border-red-500/30 bg-zinc-900/40 p-3 text-left transition-colors hover:bg-red-500/20 transition-colors"
               >
-                <p className="text-sm font-semibold text-red-700">💥 Blast Org</p>
-                <p className="mt-1 text-xs text-red-600">Encrypt everything to blueprint.inm & wipe live data.</p>
+                <p className="text-sm font-semibold text-red-400">💥 Blast Org</p>
+                <p className="mt-1 text-xs text-red-500">Encrypt everything to blueprint.inm & wipe live data.</p>
               </button>
               <button 
                 onClick={() => setShowRestoreModal(true)}
-                className="rounded-lg border border-red-300 bg-white p-3 text-left transition-colors hover:bg-red-100"
+                className="rounded-lg border border-red-500/30 bg-zinc-900/40 p-3 text-left transition-colors hover:bg-red-500/20 transition-colors"
               >
-                <p className="text-sm font-semibold text-red-700">📥 Restore Blueprint</p>
-                <p className="mt-1 text-xs text-red-600">Import an encrypted blueprint.inm to restore config.</p>
+                <p className="text-sm font-semibold text-red-400">📥 Restore Blueprint</p>
+                <p className="mt-1 text-xs text-red-500">Import an encrypted blueprint.inm to restore config.</p>
               </button>
             </div>
           </div>
@@ -394,10 +394,10 @@ function DashboardPage() {
 
         <AssignManagerWidget />
 
-        <section className="rounded-lg border border-slate-200 bg-white p-3">
+        <section className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3">
           <div className="mb-3 flex items-center justify-between">
-            <h3 className="text-sm font-semibold text-slate-800">Top Activity Areas</h3>
-            <span className="text-xs text-slate-500">Derived from frontend demo metrics</span>
+            <h3 className="text-sm font-semibold text-zinc-200">Top Activity Areas</h3>
+            <span className="text-xs text-zinc-400">Derived from frontend demo metrics</span>
           </div>
           <div className="grid grid-cols-1 gap-3 md:grid-cols-3">
             {[
@@ -405,9 +405,9 @@ function DashboardPage() {
               { label: '#engineering', detail: 'Strong reaction density and review traffic.' },
               { label: '#incident-war-room', detail: 'Time-boxed room with urgent coordination.' },
             ].map((item) => (
-              <div key={item.label} className="rounded-lg border border-slate-200 bg-slate-50 p-3">
-                <p className="text-sm font-semibold text-slate-900">{item.label}</p>
-                <p className="mt-1 text-xs text-slate-500">{item.detail}</p>
+              <div key={item.label} className="rounded-lg border border-zinc-800 bg-zinc-900/60 p-3">
+                <p className="text-sm font-semibold text-zinc-100">{item.label}</p>
+                <p className="mt-1 text-xs text-zinc-400">{item.detail}</p>
               </div>
             ))}
           </div>

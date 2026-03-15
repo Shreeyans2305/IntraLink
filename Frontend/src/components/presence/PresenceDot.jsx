@@ -4,7 +4,7 @@ function PresenceDot({ status }) {
   return (
     <span
       className={`inline-flex h-2.5 w-2.5 rounded-full ${
-        statusColorByType[status] ?? 'bg-slate-500'
+        statusColorByType[status] ?? 'bg-zinc-600'
       }`}
       aria-label={status}
     />

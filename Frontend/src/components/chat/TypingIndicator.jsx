@@ -4,7 +4,7 @@ function TypingIndicator({ users }) {
   }
 
   return (
-    <p className="px-1 text-xs text-slate-500">
+    <p className="px-1 text-xs text-zinc-400">
       {users.join(', ')} {users.length > 1 ? 'are' : 'is'} typing...
     </p>
   )

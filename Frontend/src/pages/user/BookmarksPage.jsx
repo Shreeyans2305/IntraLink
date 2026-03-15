@@ -29,13 +29,13 @@ function BookmarksPage() {
   const roomOptions = Array.from(new Set(bookmarks.map((bookmark) => bookmark.roomId)))
 
   return (
-    <main className="app-page min-h-screen p-5">
+    <main className="app-page bg-zinc-950 text-zinc-200 min-h-screen p-5">
       <div className="mb-4 flex items-center justify-between">
         <div>
-          <h1 className="text-xl font-semibold text-slate-900">Bookmarks</h1>
-          <p className="text-sm text-slate-500">Saved by {user?.name ?? 'current user'}</p>
+          <h1 className="text-xl font-semibold text-zinc-100">Bookmarks</h1>
+          <p className="text-sm text-zinc-400">Saved by {user?.name ?? 'current user'}</p>
         </div>
-        <Link to="/chat" className="text-sm font-medium text-slate-700 underline">
+        <Link to="/chat" className="text-sm font-medium text-zinc-300 underline">
           Back to Chat
         </Link>
       </div>
@@ -45,12 +45,12 @@ function BookmarksPage() {
           value={search}
           onChange={(event) => setSearch(event.target.value)}
           placeholder="Search bookmark text, tags, notes"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm"
         />
         <select
           value={roomFilter}
           onChange={(event) => setRoomFilter(event.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm"
         >
           <option value="all">All rooms</option>
           {roomOptions.map((roomId) => (
@@ -59,7 +59,7 @@ function BookmarksPage() {
             </option>
           ))}
         </select>
-        <div className="rounded-md border border-slate-200 bg-white px-3 py-2 text-sm text-slate-500">
+        <div className="rounded-md border border-zinc-800 bg-zinc-900/40 px-3 py-2 text-sm text-zinc-400">
           {visibleBookmarks.length} bookmark(s)
         </div>
       </section>
@@ -67,11 +67,11 @@ function BookmarksPage() {
       <section className="space-y-3">
         {visibleBookmarks.length ? (
           visibleBookmarks.map((bookmark) => (
-            <article key={bookmark.id} className="rounded-lg border border-slate-200 bg-white p-4">
-              <p className="mb-2 text-sm text-slate-800">{bookmark.text}</p>
+            <article key={bookmark.id} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
+              <p className="mb-2 text-sm text-zinc-200">{bookmark.text}</p>
               <div className="mb-3 flex flex-wrap gap-2">
                 {(bookmark.tags ?? []).map((tag) => (
-                  <span key={tag} className="rounded-full bg-slate-100 px-2 py-1 text-xs text-slate-600">
+                  <span key={tag} className="rounded-full bg-zinc-800 px-2 py-1 text-xs text-zinc-400">
                     {tag}
                   </span>
                 ))}
@@ -90,7 +90,7 @@ function BookmarksPage() {
                     })
                   }
                   placeholder="Tags, comma separated"
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm"
                 />
                 <input
                   value={bookmark.note ?? ''}
@@ -102,11 +102,11 @@ function BookmarksPage() {
                     })
                   }
                   placeholder="Personal note"
-                  className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+                  className="rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm"
                 />
               </div>
               <div className="flex items-center justify-between">
-                <p className="text-xs text-slate-500">
+                <p className="text-xs text-zinc-400">
                   {bookmark.roomId} • {new Date(bookmark.savedAt).toLocaleString()}
                 </p>
                 <Button variant="danger" onClick={() => deleteBookmark(bookmark.id)}>

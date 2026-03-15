@@ -49,7 +49,7 @@ function PollModal({ open, onClose, onCreate, roomId }) {
           value={question}
           onChange={(event) => setQuestion(event.target.value)}
           placeholder="Question"
-          className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
+          className="w-full rounded-md border border-zinc-700 px-2 py-2 text-sm"
         />
         <div className="space-y-2">
           {options.map((option, index) => (
@@ -58,7 +58,7 @@ function PollModal({ open, onClose, onCreate, roomId }) {
                 value={option}
                 onChange={(event) => handleOptionChange(index, event.target.value)}
                 placeholder={`Option ${index + 1}`}
-                className="w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
+                className="w-full rounded-md border border-zinc-700 px-2 py-2 text-sm"
               />
               {options.length > 2 ? (
                 <Button
@@ -76,18 +76,18 @@ function PollModal({ open, onClose, onCreate, roomId }) {
           </Button>
         </div>
 
-        <label className="flex items-center gap-2 text-sm text-slate-700">
+        <label className="flex items-center gap-2 text-sm text-zinc-300">
           <input type="checkbox" checked={anonymous} onChange={(event) => setAnonymous(event.target.checked)} />
           Anonymous poll
         </label>
 
-        <label className="block text-sm text-slate-700">
+        <label className="block text-sm text-zinc-300">
           Close date/time
           <input
             type="datetime-local"
             value={closeAt}
             onChange={(event) => setCloseAt(event.target.value)}
-            className="mt-1 w-full rounded-md border border-slate-300 px-2 py-2 text-sm"
+            className="mt-1 w-full rounded-md border border-zinc-700 px-2 py-2 text-sm"
           />
         </label>
 

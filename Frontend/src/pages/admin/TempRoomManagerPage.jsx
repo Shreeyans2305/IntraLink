@@ -18,22 +18,22 @@ function TempRoomManagerPage() {
   const activeCount = useMemo(() => tempRooms.filter((room) => !room.locked).length, [tempRooms])
 
   return (
-    <main className="app-page min-h-screen p-5">
+    <main className="app-page bg-zinc-950 text-zinc-200 min-h-screen p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Temporary Room Manager</h1>
-        <Link to="/admin/dashboard" className="text-sm font-medium text-slate-700 underline">
+        <h1 className="text-xl font-semibold text-zinc-100">Temporary Room Manager</h1>
+        <Link to="/admin/dashboard" className="text-sm font-medium text-zinc-300 underline">
           Back to Dashboard
         </Link>
       </div>
 
       <section className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-slate-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Active Rooms</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">{activeCount}</p>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Active Rooms</p>
+          <p className="mt-1 text-2xl font-semibold text-zinc-100">{activeCount}</p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-4 md:col-span-2">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4 md:col-span-2">
           <div className="mb-2 flex items-center justify-between">
-            <p className="text-sm font-semibold text-slate-900">Policy Snapshot</p>
+            <p className="text-sm font-semibold text-zinc-100">Policy Snapshot</p>
             <div className="flex gap-2">
               <Button
                 variant={viewMode === 'grid' ? 'primary' : 'secondary'}
@@ -51,7 +51,7 @@ function TempRoomManagerPage() {
               </Button>
             </div>
           </div>
-          <p className="text-sm text-slate-500">
+          <p className="text-sm text-zinc-400">
             Recommended policy: time-box incident rooms to 60 minutes, extend only on explicit owner approval,
             and terminate idle rooms to reduce sidebar noise.
           </p>
@@ -61,15 +61,15 @@ function TempRoomManagerPage() {
       <section className={viewMode === 'grid' ? 'grid grid-cols-1 gap-3 md:grid-cols-2' : 'space-y-3'}>
         {tempRooms.length ? (
           tempRooms.map((room) => (
-            <article key={room.id} className="rounded-lg border border-slate-200 bg-white p-4">
+            <article key={room.id} className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-4">
               <div className="mb-3 flex items-center justify-between">
                 <div>
-                  <h2 className="text-base font-semibold text-slate-900">{room.name}</h2>
-                  <p className="text-xs text-slate-500">Created by {room.createdBy}</p>
+                  <h2 className="text-base font-semibold text-zinc-100">{room.name}</h2>
+                  <p className="text-xs text-zinc-400">Created by {room.createdBy}</p>
                 </div>
                 <div className="text-right">
                   <RoomTimer expiresAt={room.expiresAt} />
-                  <p className="mt-1 text-[11px] text-slate-400">{room.locked ? 'Locked' : 'Active'}</p>
+                  <p className="mt-1 text-[11px] text-zinc-400">{room.locked ? 'Locked' : 'Active'}</p>
                 </div>
               </div>
 

@@ -71,16 +71,16 @@ function CommandPalette({ open, items, recentCommands = [], onClose, onSelect })
   return (
     <div className="fixed inset-0 z-50 bg-slate-950/30 p-4" onClick={handleClose}>
       <div
-        className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        className="mx-auto w-full max-w-2xl overflow-hidden rounded-2xl border border-zinc-800 bg-zinc-900/40 shadow-[0_0_40px_rgba(0,0,0,0.5)]"
         onClick={(event) => event.stopPropagation()}
       >
-        <div className="border-b border-slate-200 p-4">
+        <div className="border-b border-zinc-800 p-4">
           <input
             autoFocus
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Run command, jump to room, or navigate"
-            className="w-full rounded-lg border border-slate-300 px-3 py-3 text-sm"
+            className="w-full rounded-lg border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-3 text-sm placeholder-zinc-500 focus:border-brand-500 focus:outline-none"
           />
         </div>
         <div className="max-h-[22rem] overflow-y-auto p-3">
@@ -94,13 +94,13 @@ function CommandPalette({ open, items, recentCommands = [], onClose, onSelect })
                 onSelect(item)
               }}
               className={`block w-full rounded-lg px-3 py-3 text-left ${
-                activeIndex === index ? 'bg-slate-900 text-white' : 'hover:bg-slate-50'
+                activeIndex === index ? 'bg-zinc-950 text-white' : 'hover:bg-zinc-800/40 transition-colors'
               }`}
             >
               <div className="flex items-center justify-between gap-4">
                 <div>
                   <p className="text-sm font-medium">{item.label}</p>
-                  <p className={`text-xs ${activeIndex === index ? 'text-slate-300' : 'text-slate-500'}`}>
+                  <p className={`text-xs ${activeIndex === index ? 'text-zinc-300' : 'text-zinc-400'}`}>
                     {item.description}
                   </p>
                 </div>
@@ -109,7 +109,7 @@ function CommandPalette({ open, items, recentCommands = [], onClose, onSelect })
             </button>
           ))}
           {!filteredItems.length ? (
-            <div className="rounded-lg border border-dashed border-slate-200 px-3 py-8 text-center text-sm text-slate-500">
+            <div className="rounded-lg border border-dashed border-zinc-800 px-3 py-8 text-center text-sm text-zinc-400">
               No matching actions.
             </div>
           ) : null}

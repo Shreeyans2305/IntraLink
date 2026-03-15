@@ -15,7 +15,7 @@ function Avatar({ name, size = 'md' }) {
 
   return (
     <div
-      className={`inline-flex items-center justify-center rounded-full bg-slate-200 font-semibold text-slate-700 ${sizeClass}`}
+      className={`inline-flex items-center justify-center rounded-full bg-zinc-800 border border-zinc-700/50 shadow-[inset_0_1px_rgba(255,255,255,0.05)] font-semibold text-brand-400 ${sizeClass}`}
       aria-label={name}
     >
       {initials(name)}

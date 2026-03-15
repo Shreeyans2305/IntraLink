@@ -1,13 +1,16 @@
 import { useEffect } from 'react'
-import { useDispatch } from 'react-redux'
+import { useDispatch, useSelector } from 'react-redux'
 import { useSocket } from './useSocket'
 import { receiveMessage, setThreadCount, setTypingUsers } from '../features/messaging/messagingSlice'
 import { setReactions } from '../features/reactions/reactionSlice'
 import { receiveThreadReply } from '../features/threads/threadSlice'
 import { updatePoll, createPoll, closePoll } from '../features/polls/pollSlice'
+import { selectCurrentUser } from '../features/auth/authSlice'
+import { addNotification } from '../features/notifications/notifSlice'
 
 export function useMessagingSocket() {
   const dispatch = useDispatch()
+  const currentUser = useSelector(selectCurrentUser)
   const { socket, connected } = useSocket({ autoConnect: true })
 
   useEffect(() => {
@@ -25,6 +28,15 @@ export function useMessagingSocket() {
         threadCount: msg.thread_count,
         expiryAt: msg.expires_at,
       }))
+
+      if (currentUser && msg.text && msg.author_id !== currentUser.id && !msg.is_system) {
+        if (msg.text.includes(`@${currentUser.name}`) || msg.text.includes('@everyone')) {
+          dispatch(addNotification({
+            type: 'Mentions',
+            text: `${msg.author_name} mentioned you`,
+          }))
+        }
+      }
     }
 
     const handleNewWhisper = (msg) => {
@@ -41,6 +53,14 @@ export function useMessagingSocket() {
         isWhisper: true,
         targetUsername: msg.target_username,
       }))
+
+      // Notify the recipient when they receive a whisper from someone else
+      if (currentUser && msg.author_id !== currentUser.id) {
+        dispatch(addNotification({
+          type: 'Whispers',
+          text: `${msg.author_name} sent you a whisper`,
+        }))
+      }
     }
 
     const handleReactionUpdate = (data) => {
@@ -157,7 +177,7 @@ export function useMessagingSocket() {
       socket.off('lockdown_activated')
       socket.off('lockdown_deactivated')
     }
-  }, [dispatch, socket, connected])
+  }, [dispatch, socket, connected, currentUser?.id, currentUser?.name])
 
   return { socket, connected }
 }

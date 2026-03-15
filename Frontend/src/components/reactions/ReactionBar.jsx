@@ -13,7 +13,7 @@ function ReactionBar({ reactions = {}, onReact }) {
         <button
           key={emoji}
           type="button"
-          className="group inline-flex items-center gap-1 rounded-full border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700"
+          className="group inline-flex items-center gap-1 rounded-full border border-zinc-800 bg-zinc-900/60 px-2 py-1 text-xs text-zinc-300"
           onClick={() => onReact(emoji)}
         >
           <span>{emoji}</span>

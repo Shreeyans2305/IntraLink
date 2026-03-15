@@ -77,10 +77,10 @@ function AuditLogPage() {
   }
 
   return (
-    <main className="app-page min-h-screen p-5">
+    <main className="app-page bg-zinc-950 text-zinc-200 min-h-screen p-5">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-xl font-semibold text-slate-900">Audit Log Viewer</h1>
-        <Link to="/admin/dashboard" className="text-sm font-medium text-slate-700 underline">
+        <h1 className="text-xl font-semibold text-zinc-100">Audit Log Viewer</h1>
+        <Link to="/admin/dashboard" className="text-sm font-medium text-zinc-300 underline">
           Back to Dashboard
         </Link>
       </div>
@@ -90,18 +90,18 @@ function AuditLogPage() {
           value={filterUser}
           onChange={(event) => setFilterUser(event.target.value)}
           placeholder="Filter by user"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm"
         />
         <input
           value={filterAction}
           onChange={(event) => setFilterAction(event.target.value)}
           placeholder="Filter by action"
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm"
         />
         <select
           value={datePreset}
           onChange={(event) => setDatePreset(event.target.value)}
-          className="rounded-md border border-slate-300 px-3 py-2 text-sm"
+          className="rounded-md border border-zinc-700 bg-zinc-900/40 text-zinc-100 px-3 py-2 text-sm"
         >
           <option value="all">All time</option>
           <option value="15m">Last 15m</option>
@@ -118,26 +118,26 @@ function AuditLogPage() {
       </section>
 
       <section className="mb-4 grid grid-cols-1 gap-3 md:grid-cols-3">
-        <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Visible Entries</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">{filteredLogs.length}</p>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-sm text-zinc-400">
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Visible Entries</p>
+          <p className="mt-1 text-2xl font-semibold text-zinc-100">{filteredLogs.length}</p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Anomalies</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-sm text-zinc-400">
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Anomalies</p>
+          <p className="mt-1 text-2xl font-semibold text-zinc-100">
             {filteredLogs.filter((log) => log.anomaly).length}
           </p>
         </div>
-        <div className="rounded-lg border border-slate-200 bg-white p-3 text-sm text-slate-600">
-          <p className="text-xs uppercase tracking-wide text-slate-500">Streaming</p>
-          <p className="mt-1 text-2xl font-semibold text-slate-900">{streaming ? 'Live' : 'Idle'}</p>
+        <div className="rounded-lg border border-zinc-800 bg-zinc-900/40 p-3 text-sm text-zinc-400">
+          <p className="text-xs uppercase tracking-wide text-zinc-400">Streaming</p>
+          <p className="mt-1 text-2xl font-semibold text-zinc-100">{streaming ? 'Live' : 'Idle'}</p>
         </div>
       </section>
 
       {viewMode === 'table' ? (
-        <section className="overflow-hidden rounded-lg border border-slate-200 bg-white">
+        <section className="overflow-hidden rounded-lg border border-zinc-800 bg-zinc-900/40">
           <table className="w-full border-collapse text-sm">
-            <thead className="bg-slate-50 text-left text-xs uppercase tracking-wide text-slate-600">
+            <thead className="bg-zinc-900/60 text-left text-xs uppercase tracking-wide text-zinc-400">
               <tr>
                 <th className="px-3 py-2">User</th>
                 <th className="px-3 py-2">Action</th>
@@ -149,7 +149,7 @@ function AuditLogPage() {
               {filteredLogs.map((log) => (
                 <tr
                   key={log.id}
-                  className={log.anomaly ? 'bg-amber-50' : 'border-t border-slate-100'}
+                  className={log.anomaly ? 'bg-amber-500/10' : 'border-t border-zinc-800/50'}
                   title={log.anomaly ? 'Anomaly highlighted' : ''}
                 >
                   <td className="px-3 py-2">{log.user}</td>
@@ -167,17 +167,17 @@ function AuditLogPage() {
             <article
               key={log.id}
               className={`rounded-lg border p-4 ${
-                log.anomaly ? 'border-amber-300 bg-amber-50' : 'border-slate-200 bg-white'
+                log.anomaly ? 'border-amber-500/30 bg-amber-500/10' : 'border-zinc-800 bg-zinc-900/40'
               }`}
             >
               <div className="mb-2 flex items-center justify-between gap-3">
                 <div>
-                  <p className="text-sm font-semibold text-slate-900">{log.action}</p>
-                  <p className="text-xs text-slate-500">{log.user}</p>
+                  <p className="text-sm font-semibold text-zinc-100">{log.action}</p>
+                  <p className="text-xs text-zinc-400">{log.user}</p>
                 </div>
-                <span className="text-xs text-slate-500">{new Date(log.timestamp).toLocaleString()}</span>
+                <span className="text-xs text-zinc-400">{new Date(log.timestamp).toLocaleString()}</span>
               </div>
-              <p className="text-sm text-slate-600">{log.detail}</p>
+              <p className="text-sm text-zinc-400">{log.detail}</p>
             </article>
           ))}
         </section>

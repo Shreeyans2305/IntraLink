@@ -26,6 +26,7 @@ import SkeletonBlock from '../../components/ui/SkeletonBlock'
 import Toast from '../../components/ui/Toast'
 import CreateRoomModal from '../../components/chat/CreateRoomModal'
 import ManageMembersModal from '../../components/chat/ManageMembersModal'
+import { fetchUsers } from '../../features/messaging/messagingApi'
 import {
   addSummaryCard,
   endAiRequest,
@@ -399,6 +400,12 @@ function ChatPage() {
     onSuccess: (data) => {
       dispatch(setSmartReplies(data))
     },
+  })
+
+  const { data: allUsers = [] } = useQuery({
+    queryKey: ['all-users-for-mentions'],
+    queryFn: fetchUsers,
+    staleTime: 60000,
   })
 
   const firstUnreadMessageId = useMemo(() => {
@@ -886,12 +893,12 @@ function ChatPage() {
   const pollForRoom = polls.find((poll) => poll.roomId === activeRoomId && !poll.closed)
 
   return (
-    <div className="app-page relative flex h-screen flex-col">
-      <header className="app-surface flex items-center justify-between border-b px-4 py-3">
+    <div className="app-page bg-zinc-950 text-zinc-200 relative flex h-screen flex-col">
+      <header className="app-surface bg-zinc-900/20 flex items-center justify-between border-b border-zinc-800/80 px-4 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-md">
         <div className="flex items-center gap-3">
-          <h1 className="text-lg font-semibold text-slate-900">IntraLink</h1>
-          <div className="flex items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 text-sm text-slate-500">
-            <Search size={14} />
+          <h1 className="text-lg font-bold tracking-tight text-zinc-100 text-shadow-sm shadow-brand-500/20">IntraLink</h1>
+          <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-sm text-zinc-400 focus-within:border-brand-500/50 focus-within:ring-1 focus-within:ring-brand-500/50 transition-all">
+            <Search size={14} className="text-zinc-500" />
             <input
               value={search}
               onChange={(event) => setSearch(event.target.value)}
@@ -914,7 +921,7 @@ function ChatPage() {
 
           <button
             type="button"
-            className="relative inline-flex items-center gap-2 rounded-md border border-slate-200 px-2 py-1.5 text-sm"
+            className="relative inline-flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/50 transition-colors px-2 py-1.5 text-sm text-zinc-300"
             onClick={() => setShowNotifications((value) => !value)}
           >
             <Bell size={16} />
@@ -967,23 +974,23 @@ function ChatPage() {
       <ShortcutModal open={showShortcuts} onClose={() => setShowShortcuts(false)} />
 
       <div className="flex min-h-0 flex-1">
-        <aside className="app-surface w-80 overflow-y-auto border-r p-3">
+        <aside className="app-surface bg-zinc-900/20 w-80 overflow-y-auto border-r border-zinc-800/80 p-3 scrollbar-thin scrollbar-thumb-zinc-700 scrollbar-track-transparent">
           <div className="mb-4 space-y-2">
-            <h2 className="text-xs font-semibold uppercase tracking-wide text-slate-500">Navigation</h2>
+            <h2 className="text-xs font-semibold uppercase tracking-widest text-zinc-500">Navigation</h2>
             <div className="grid grid-cols-2 gap-2 text-xs">
-              <Link to="/user/bookmarks" className="rounded border border-slate-200 p-2 text-center">
+              <Link to="/user/bookmarks" className="rounded-xl border border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/60 hover:text-brand-400 transition-colors p-2 text-center text-zinc-300">
                 Bookmarks
               </Link>
-              <Link to="/user/preferences" className="rounded border border-slate-200 p-2 text-center">
-                Preferences
+              <Link to="/user/settings" className="rounded-xl border border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/60 hover:text-brand-400 transition-colors p-2 text-center text-zinc-300">
+                Settings
               </Link>
-              <Link to="/manager/dashboard" className="rounded border border-slate-200 p-2 text-center">
+              <Link to="/manager/dashboard" className="rounded-xl border border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/60 hover:text-brand-400 transition-colors p-2 text-center text-zinc-300">
                 Managed Rooms
               </Link>
               {isAdmin ? (
                 <Link
                   to="/admin/dashboard"
-                  className="rounded border border-slate-200 p-2 text-center"
+                  className="rounded-xl border border-zinc-800 bg-zinc-900/30 hover:bg-zinc-800/60 hover:text-brand-400 transition-colors p-2 text-center text-zinc-300"
                 >
                   Admin Dash
                 </Link>
@@ -1004,10 +1011,10 @@ function ChatPage() {
                     key={room.id}
                     type="button"
                     onClick={() => handleSelectRoom(room.id)}
-                    className={`flex w-full items-center justify-between rounded-md border px-3 py-2 text-left text-sm ${
+                    className={`flex w-full items-center justify-between rounded-xl border px-3 py-2 text-left text-sm transition-colors ${
                       activeRoomId === room.id
-                        ? 'border-slate-900 bg-slate-900 text-white'
-                        : 'border-slate-200 bg-white text-slate-700'
+                        ? 'border-brand-500/50 bg-brand-500/10 text-brand-400 shadow-[inset_0_0_15px_rgba(59,130,246,0.1)]'
+                        : 'border-zinc-800/60 bg-zinc-900/40 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/60'
                     }`}
                   >
                     <span>#{room.name}</span>
@@ -1038,8 +1045,8 @@ function ChatPage() {
                   onDragStart={() => setDraggedRoomId(room.id)}
                   onDragOver={(event) => event.preventDefault()}
                   onDrop={() => handleRoomDrop(room.id)}
-                  className={`rounded-md border ${
-                    activeRoomId === room.id ? 'border-slate-900 bg-slate-900 text-white' : 'border-slate-200 bg-white'
+                  className={`rounded-xl border transition-colors ${
+                    activeRoomId === room.id ? 'border-brand-500/50 bg-brand-500/10 text-brand-400 shadow-[inset_0_0_15px_rgba(59,130,246,0.1)]' : 'border-zinc-800/60 bg-zinc-900/40 text-zinc-300 hover:border-zinc-700 hover:bg-zinc-800/60'
                   }`}
                 >
                   <div className="flex items-center gap-2 px-3 py-2">
@@ -1051,17 +1058,17 @@ function ChatPage() {
                       <span>#{room.name}</span>
                       <div className="flex items-center gap-1 text-[11px]">
                         {roomSignals[room.id]?.mentionCount ? (
-                          <span className="rounded-full bg-amber-100 px-1.5 py-0.5 text-amber-800">
+                          <span className="rounded-full bg-brand-500/20 border border-brand-500/30 px-1.5 py-0.5 text-brand-300 shadow-[0_0_10px_rgba(59,130,246,0.2)]">
                             @{roomSignals[room.id].mentionCount}
                           </span>
                         ) : null}
                         {roomSignals[room.id]?.unreadCount ? (
-                          <span className="rounded-full bg-sky-100 px-1.5 py-0.5 text-sky-800">
+                          <span className="rounded-full bg-sky-500/20 border border-sky-500/30 px-1.5 py-0.5 text-sky-300">
                             {roomSignals[room.id].unreadCount}
                           </span>
                         ) : null}
                         {roomSignals[room.id]?.threadCount ? (
-                          <span className="rounded-full bg-slate-100 px-1.5 py-0.5 text-slate-700">
+                          <span className="rounded-full bg-zinc-800 px-1.5 py-0.5 text-zinc-400">
                             T{roomSignals[room.id].threadCount}
                           </span>
                         ) : null}
@@ -1092,7 +1099,7 @@ function ChatPage() {
                   key={room.id}
                   type="button"
                   onClick={() => handleSelectRoom(room.id)}
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-sm text-slate-700"
+                  className="w-full rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-3 py-2 text-left text-sm text-zinc-400 hover:border-zinc-700 hover:bg-zinc-800/60 hover:text-zinc-200 transition-colors"
                 >
                   #{room.name}
                 </button>
@@ -1139,7 +1146,7 @@ function ChatPage() {
                   key={`${command}-${index}`}
                   type="button"
                   onClick={() => handleSendMessage(command)}
-                  className="w-full rounded-md border border-slate-200 bg-white px-3 py-2 text-left text-xs text-slate-600"
+                  className="w-full rounded-xl border border-zinc-800/60 bg-zinc-900/40 px-3 py-2 text-left text-xs text-zinc-500 hover:border-zinc-700 hover:bg-zinc-800/60 hover:text-zinc-300 transition-colors"
                 >
                   {command}
                 </button>
@@ -1157,24 +1164,24 @@ function ChatPage() {
           </div>
         </aside>
 
-        <section className="flex min-w-0 flex-1 flex-col p-3">
+        <section className="flex min-w-0 flex-1 flex-col p-3 bg-zinc-950">
           <div className="mb-3 flex items-center justify-between">
             <div>
-              <p className="text-xs text-slate-500">Channel</p>
-              <h2 className="text-lg font-semibold text-slate-900 flex items-center gap-2">
+              <p className="text-xs font-medium uppercase tracking-widest text-zinc-500">Channel</p>
+              <h2 className="text-lg font-bold text-zinc-100 flex items-center gap-2 tracking-tight">
                 #{currentRoom?.name ?? activeRoomId?.replace('room-', '') ?? 'select-room'}
                 {!roomIsLocked && 
                   (isAdmin || currentRoom?.members?.find(m => m.user_id === user?.id)?.room_role === 'room_manager') && (
                   <button 
                     onClick={() => setShowManageMembers(true)}
-                    className="text-slate-400 hover:text-cyan-600 transition-colors ml-2"
+                    className="text-zinc-400 hover:text-cyan-600 transition-colors ml-2"
                     title="Manage Members"
                   >
                     <UserPlus size={16} />
                   </button>
                 )}
               </h2>
-              <p className="text-xs text-slate-500">
+              <p className="text-xs text-zinc-500">
                 {roomSignals[activeRoomId]?.unreadCount ?? 0} unread · {roomSignals[activeRoomId]?.threadCount ?? 0} threaded replies
               </p>
             </div>
@@ -1200,16 +1207,16 @@ function ChatPage() {
 
           {roomIsLocked ? <RoomExpiredBanner /> : null}
           {isLockdown ? (
-            <div className="mb-3 flex items-center justify-center rounded-lg border border-red-300 bg-red-50 p-3 shadow-sm">
-              <span className="text-sm font-semibold text-red-800">
+            <div className="mb-3 flex items-center justify-center rounded-lg border border-red-500/30 bg-red-500/10 p-3 shadow-sm">
+              <span className="text-sm font-semibold text-red-400">
                 🚨 Wired and Secure Mode: System is in Lockdown. Internal communication only.
               </span>
             </div>
           ) : null}
 
           {selectionMode ? (
-            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-lg border border-slate-200 bg-white px-3 py-2">
-              <span className="text-sm text-slate-700">{selectedMessageIds.length} messages selected</span>
+            <div className="mb-3 flex flex-wrap items-center justify-between gap-2 rounded-xl border border-brand-500/40 bg-brand-500/10 px-3 py-2 shadow-[0_0_20px_rgba(59,130,246,0.1)]">
+              <span className="text-sm font-medium text-brand-300">{selectedMessageIds.length} messages selected</span>
               <div className="flex flex-wrap gap-2">
                 <Button variant="secondary" className="text-xs" onClick={handleBookmarkSelected}>
                   Bookmark Selected
@@ -1228,10 +1235,10 @@ function ChatPage() {
           ) : null}
 
           {pinnedMessages.length ? (
-            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-md border border-slate-200 bg-white p-2">
-              <span className="text-xs font-semibold text-slate-500">Pinned</span>
+            <div className="mb-3 flex flex-wrap items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 p-2 shadow-sm">
+              <span className="text-xs font-bold uppercase tracking-widest text-brand-500">Pinned</span>
               {pinnedMessages.map((message) => (
-                <span key={message.id} className="rounded-full border border-slate-200 px-2 py-1 text-xs">
+                <span key={message.id} className="rounded-full border border-zinc-700 bg-zinc-800 px-2 py-1 text-xs text-zinc-300">
                   {message.text}
                 </span>
               ))}
@@ -1239,21 +1246,21 @@ function ChatPage() {
           ) : null}
 
           {aiState.loading ? (
-            <div className="mb-3 space-y-2 rounded-md border border-slate-200 bg-white p-3">
-              <SkeletonBlock className="h-4 w-1/3" />
-              <SkeletonBlock className="h-3 w-full" />
-              <SkeletonBlock className="h-3 w-5/6" />
+            <div className="mb-3 space-y-2 rounded-xl border border-brand-500/30 bg-brand-500/5 p-3 shadow-[0_0_15px_rgba(59,130,246,0.05)]">
+              <SkeletonBlock className="h-4 w-1/3 opacity-50 block glow animate-pulse" />
+              <SkeletonBlock className="h-3 w-full opacity-30 block glow animate-pulse" />
+              <SkeletonBlock className="h-3 w-5/6 opacity-30 block glow animate-pulse" />
             </div>
           ) : null}
 
           {aiState.summaryCards.length ? (
             <div className="mb-3 space-y-2">
               {aiState.summaryCards.map((summary) => (
-                <details key={summary.id} className="rounded-md border border-slate-200 bg-white p-3">
-                  <summary className="cursor-pointer text-sm font-semibold text-slate-800">
+                <details key={summary.id} className="rounded-xl border border-zinc-800 bg-zinc-900/60 p-3 shadow-sm backdrop-blur-sm">
+                  <summary className="cursor-pointer text-sm font-semibold text-brand-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 rounded-md">
                     AI Summary · {summary.depth}
                   </summary>
-                  <div className="mt-2 space-y-2 text-sm text-slate-700">
+                  <div className="mt-2 space-y-2 text-sm text-zinc-300">
                     <div>
                       <p className="font-semibold">Key Decisions</p>
                       <ul className="list-disc pl-5">
@@ -1334,14 +1341,16 @@ function ChatPage() {
               onRestoreSmartReplies={() => setSmartRepliesDismissed(false)}
               onOpenCommandPalette={() => setShowCommandPalette(true)}
               commandHistory={commandHistory}
+              members={currentRoom?.members ?? []}
+              allUsers={allUsers}
             />
           </div>
         </section>
 
         {threadState.isOpen ? (
-          <div className="flex bg-slate-50" style={{ width: `${threadWidth}px` }}>
+          <div className="flex bg-zinc-900/50 border-l border-zinc-800/80 backdrop-blur-xl shadow-[0_0_40px_rgba(0,0,0,0.5)] relative z-10" style={{ width: `${threadWidth}px` }}>
             <div
-              className="w-1 cursor-col-resize bg-transparent transition hover:bg-slate-300"
+              className="w-1 cursor-col-resize bg-transparent hover:bg-brand-500/50 transition-colors shadow-[0_0_10px_rgba(59,130,246,0.5)] opacity-0 hover:opacity-100 absolute left-0 top-0 bottom-0 z-20"
               onMouseDown={() => setIsThreadResizing(true)}
             />
             <ThreadPanel

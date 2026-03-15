@@ -10,11 +10,11 @@ function ThreadPanel({ open, parentMessage, items, onClose, onReply, disabled })
   }
 
   return (
-    <aside className="h-full w-full border-l border-slate-200 bg-slate-50 p-3">
+    <aside className="h-full w-full border-l border-zinc-800 bg-zinc-900/60 p-3">
       <div className="mb-3 flex items-center justify-between">
         <div>
-          <p className="text-xs text-slate-500">Thread</p>
-          <div className="text-sm font-semibold text-slate-800"><MarkdownText text={parentMessage.text} /></div>
+          <p className="text-xs text-zinc-400">Thread</p>
+          <div className="text-sm font-semibold text-zinc-200"><MarkdownText text={parentMessage.text} /></div>
         </div>
         <Button variant="ghost" className="px-2 py-1 text-xs" onClick={onClose}>
           Close

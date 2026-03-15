@@ -20,7 +20,7 @@ function highlightText(text, query) {
   const parts = text.split(new RegExp(`(${safeQuery})`, 'ig'))
   return parts.map((part, index) =>
     part.toLowerCase() === query.toLowerCase() ? (
-      <mark key={`${part}-${index}`} className="rounded bg-amber-200 px-0.5 text-slate-900">
+      <mark key={`${part}-${index}`} className="rounded bg-amber-200 px-0.5 text-zinc-100">
         {part}
       </mark>
     ) : (
@@ -49,12 +49,12 @@ function MessageBubble({
 
   return (
     <article
-      className={`rounded-lg border p-3 ${
+      className={`rounded-xl border p-3 shadow-sm transition-all ${
         message.isSystem
-          ? 'border-blue-200 bg-blue-50 text-slate-700'
+          ? 'border-sky-500/30 bg-sky-500/10 text-sky-200 shadow-[inset_0_0_15px_rgba(14,165,233,0.1)]'
           : message.isWhisper
-          ? 'border-purple-200 bg-purple-50 text-purple-900 border-l-4 border-l-purple-500'
-          : 'border-slate-200 bg-white text-slate-900'
+          ? 'border-purple-500/30 bg-purple-500/10 text-purple-200 border-l-4 border-l-purple-500 shadow-[inset_0_0_15px_rgba(168,85,247,0.1)]'
+          : 'border-zinc-800/60 bg-zinc-900/60 text-zinc-200 hover:border-zinc-700/80 hover:shadow-[0_4px_20px_rgba(0,0,0,0.3)]'
       }`}
     >
       <div className="mb-1 flex items-center justify-between gap-3">
@@ -66,11 +66,11 @@ function MessageBubble({
             </button>
             {showProfile && profile ? <UserHoverCard profile={profile} /> : null}
           </div>
-          <span className="text-xs text-slate-500">{formatMessageTime(message.timestamp)}</span>
+          <span className="text-xs text-zinc-500">{formatMessageTime(message.timestamp)}</span>
         </div>
         <div className="flex items-center gap-2">
           {expiryText ? (
-            <span className="rounded-full border border-amber-300 bg-amber-50 px-2 py-0.5 text-[11px] font-medium text-amber-800">
+            <span className="rounded-full border border-amber-500/30 bg-amber-500/10 px-2 py-0.5 text-[11px] font-medium text-amber-400">
               {expiryText}
             </span>
           ) : null}
@@ -96,7 +96,7 @@ function MessageBubble({
         </div>
       </div>
 
-      <div className={`text-sm ${message.expired ? 'italic text-slate-500' : ''} ${message.isWhisper ? 'italic' : ''}`}>
+      <div className={`text-sm ${message.expired ? 'italic text-zinc-500' : ''} ${message.isWhisper ? 'italic' : ''}`}>
         <MarkdownText text={message.text} searchQuery={searchQuery} highlightText={highlightText} />
       </div>
 

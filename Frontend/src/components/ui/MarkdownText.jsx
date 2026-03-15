@@ -15,15 +15,15 @@ export default function MarkdownText({ text, searchQuery, highlightText }) {
         code: ({node, inline, className, children, ...props}) => {
           const match = /language-(\w+)/.exec(className || '')
           return inline ? (
-            <code className="rounded bg-slate-100 px-1 py-0.5 font-mono text-xs text-pink-600" {...props}>{children}</code>
+            <code className="rounded bg-zinc-800 px-1 py-0.5 font-mono text-xs text-pink-600" {...props}>{children}</code>
           ) : (
-            <div className="mt-2 mb-2 overflow-hidden rounded-md bg-slate-800">
-              <div className="flex bg-slate-900 px-3 py-1 text-[10px] text-slate-400 uppercase tracking-widest">{match ? match[1] : 'code'}</div>
+            <div className="mt-2 mb-2 overflow-hidden rounded-md bg-zinc-900">
+              <div className="flex bg-zinc-950 px-3 py-1 text-[10px] text-zinc-400 uppercase tracking-widest">{match ? match[1] : 'code'}</div>
               <pre className="overflow-x-auto p-3 font-mono text-xs text-slate-50"><code {...props} className={className}>{children}</code></pre>
             </div>
           )
         },
-        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-slate-300 pl-3 italic text-slate-600 mt-2 mb-2 bg-slate-50 py-1" {...props} />,
+        blockquote: ({node, ...props}) => <blockquote className="border-l-4 border-zinc-700 pl-3 italic text-zinc-400 mt-2 mb-2 bg-zinc-900/60 py-1" {...props} />,
         ul: ({node, ...props}) => <ul className="list-inside list-disc mt-1 mb-2 space-y-1" {...props} />,
         ol: ({node, ...props}) => <ol className="list-inside list-decimal mt-1 mb-2 space-y-1" {...props} />
       }}
