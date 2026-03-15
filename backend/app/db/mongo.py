@@ -75,6 +75,10 @@ def system_config_col():
     return get_database()["system_config"]
 
 
+def whispers_col():
+    return get_database()["whispers"]
+
+
 async def close_client():
     global _client
     if _client:

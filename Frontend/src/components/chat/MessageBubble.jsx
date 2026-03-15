@@ -52,6 +52,8 @@ function MessageBubble({
       className={`rounded-lg border p-3 ${
         message.isSystem
           ? 'border-blue-200 bg-blue-50 text-slate-700'
+          : message.isWhisper
+          ? 'border-purple-200 bg-purple-50 text-purple-900 border-l-4 border-l-purple-500'
           : 'border-slate-200 bg-white text-slate-900'
       }`}
     >
@@ -60,7 +62,7 @@ function MessageBubble({
           {selectionMode ? <input type="checkbox" checked={selected} onChange={onToggleSelect} /> : null}
           <div onMouseEnter={() => setShowProfile(true)} onMouseLeave={() => setShowProfile(false)}>
             <button type="button" className="text-sm font-semibold">
-              {message.authorName}
+              {message.isWhisper ? `Private whisper from ${message.authorName} to @${message.targetUsername}` : message.authorName}
             </button>
             {showProfile && profile ? <UserHoverCard profile={profile} /> : null}
           </div>
@@ -94,7 +96,7 @@ function MessageBubble({
         </div>
       </div>
 
-      <div className={`text-sm ${message.expired ? 'italic text-slate-500' : ''}`}>
+      <div className={`text-sm ${message.expired ? 'italic text-slate-500' : ''} ${message.isWhisper ? 'italic' : ''}`}>
         <MarkdownText text={message.text} searchQuery={searchQuery} highlightText={highlightText} />
       </div>
 

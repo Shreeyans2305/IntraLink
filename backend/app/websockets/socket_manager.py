@@ -16,6 +16,7 @@ from app.db.mongo import (
     temprooms_col,
     threads_col,
     users_col,
+    whispers_col,
 )
 from app.utils.id_utils import doc_to_dict, str_to_oid
 
@@ -195,6 +196,82 @@ async def send_message(sid, data):
     out = doc_to_dict(doc)
 
     await sio.emit("new_message", out, room=room_id)
+
+
+@sio.event
+async def send_whisper(sid, data):
+    if _lockdown_active:
+        await sio.emit("error", {"message": "All real-time actions are disabled during Lockdown Mode."}, to=sid)
+        return
+
+    user = _sid_user.get(sid)
+    if not user:
+        return
+
+    room_id = data.get("room_id")
+    target_username = data.get("target_username")
+    text = data.get("text", "").strip()
+
+    if not room_id or not target_username or not text:
+        return
+
+    # Mute/Membership check for sender
+    try:
+        room_oid = str_to_oid(room_id)
+        room = await rooms_col().find_one({"_id": room_oid})
+    except ValueError:
+        await sio.emit("error", {"message": f"Invalid Room ID '{room_id}'"}, to=sid)
+        return
+
+    if room:
+        member = next((m for m in room.get("members", []) if m["user_id"] == user["id"]), None)
+        if not member and user.get("org_role") != "admin":
+            await sio.emit("error", {"message": "You are not a member of this room."}, to=sid)
+            return
+        if member and member.get("muted"):
+            await sio.emit("error", {"message": "You are muted in this room."}, to=sid)
+            return
+
+    # Find the target user
+    target_user = await users_col().find_one({"name": target_username})
+    if not target_user:
+        await sio.emit("error", {"message": f"User '{target_username}' not found."}, to=sid)
+        return
+
+    target_user_id = str(target_user["_id"])
+
+    # Check target user membership (PRD: system error if not in room)
+    target_member = next((m for m in room.get("members", []) if m["user_id"] == target_user_id), None)
+    if not target_member and target_user.get("org_role") != "admin":
+        await sio.emit("error", {"message": f"{target_username} is not currently in this room."}, to=sid)
+        return
+
+    target_sids = _user_sids.get(target_user_id, set())
+
+    now = int(time.time() * 1000)
+    doc = {
+        "room_id": room_id,
+        "text": text,
+        "author_id": user["id"],
+        "author_name": user["name"],
+        "target_username": target_username,
+        "target_id": target_user_id,
+        "timestamp": now,
+        "is_system": False,
+        "isWhisper": True, # distinctive flag
+    }
+    result = await whispers_col().insert_one(doc)
+    doc["_id"] = result.inserted_id
+    out = doc_to_dict(doc)
+
+    # Emit back to sender
+    await sio.emit("new_whisper", out, to=sid)
+
+    # Emit to recipient's active sessions
+    for tsid in target_sids:
+        # Don't emit to the same sid twice if somehow they whisper themselves
+        if tsid != sid:
+            await sio.emit("new_whisper", out, to=tsid)
 
 
 # ── Typing Indicators ─────────────────────────────────────────────────────────

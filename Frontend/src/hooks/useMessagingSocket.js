@@ -27,6 +27,22 @@ export function useMessagingSocket() {
       }))
     }
 
+    const handleNewWhisper = (msg) => {
+      dispatch(receiveMessage({
+        roomId: msg.room_id,
+        id: msg.id || msg._id,
+        text: msg.text,
+        authorName: msg.author_name,
+        authorId: msg.author_id,
+        timestamp: msg.timestamp,
+        isSystem: msg.is_system,
+        threadCount: msg.thread_count,
+        expiryAt: msg.expires_at,
+        isWhisper: true,
+        targetUsername: msg.target_username,
+      }))
+    }
+
     const handleReactionUpdate = (data) => {
       dispatch(setReactions({
         messageId: data.message_id,
@@ -113,6 +129,7 @@ export function useMessagingSocket() {
     }
 
     socket.on('new_message', handleNewMessage)
+    socket.on('new_whisper', handleNewWhisper)
     socket.on('reaction_update', handleReactionUpdate)
     socket.on('thread_update', handleThreadUpdate)
     socket.on('typing_users', handleTypingUsers)
@@ -127,6 +144,7 @@ export function useMessagingSocket() {
 
     return () => {
       socket.off('new_message', handleNewMessage)
+      socket.off('new_whisper', handleNewWhisper)
       socket.off('reaction_update', handleReactionUpdate)
       socket.off('thread_update', handleThreadUpdate)
       socket.off('typing_users', handleTypingUsers)

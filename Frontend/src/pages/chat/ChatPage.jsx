@@ -585,12 +585,21 @@ function ChatPage() {
       const target = args[0]
       const body = args.slice(1).join(' ')
 
-      dispatch(
-        addSystemMessage({
-          roomId: activeRoomId,
-          text: target && body ? `Whisper to @${target}: ${body} (Note: Direct messaging UI not fully bound yet)` : 'Usage: /whisper [user] [message]',
-        }),
-      )
+      if (!target || !body) {
+        dispatch(
+          addSystemMessage({
+            roomId: activeRoomId,
+            text: 'Usage: /whisper [user] [message]',
+          })
+        )
+        return
+      }
+
+      socket.emit('send_whisper', {
+        room_id: activeRoomId,
+        target_username: target,
+        text: body,
+      })
     },
     join: async (args) => {
       const roomId = args[0]
