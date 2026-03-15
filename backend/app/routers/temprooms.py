@@ -31,7 +31,7 @@ def _parse_duration_ms(duration: str) -> int:
 
 @router.get("/")
 async def list_temp_rooms(current_user: dict = Depends(get_current_user)):
-    cursor = temprooms_col().find({})
+    cursor = temprooms_col().find({"org_id": current_user["org_id"]})
     return [doc_to_dict(r) async for r in cursor]
 
 
@@ -53,6 +53,7 @@ async def create_temp_room(
         "members": [{"user_id": current_user["id"], "room_role": "room_manager", "muted": False}],
         "pinned_message_ids": [],
         "created_by": current_user["id"],
+        "org_id": current_user["org_id"],
         "created_at": now,
     }
     room_result = await rooms_col().insert_one(room_doc)
@@ -63,6 +64,7 @@ async def create_temp_room(
         "name": body.name,
         "created_by": current_user["name"],
         "created_by_id": current_user["id"],
+        "org_id": current_user["org_id"],
         "duration": body.duration,
         "expires_at": expires_at,
         "locked": False,
@@ -77,6 +79,7 @@ async def create_temp_room(
         "text": f'Temporary room "{body.name}" created for {body.duration}. Auto-expiry enabled.',
         "author_id": "system",
         "author_name": "System",
+        "org_id": current_user["org_id"],
         "timestamp": now,
         "is_system": True,
         "thread_count": 0,
@@ -91,9 +94,9 @@ async def extend_temp_room(
     body: TempRoomExtend,
     current_user: dict = Depends(get_current_user),
 ):
-    temp = await temprooms_col().find_one({"_id": str_to_oid(temp_id)})
+    temp = await temprooms_col().find_one({"_id": str_to_oid(temp_id), "org_id": current_user["org_id"]})
     if not temp:
-        raise HTTPException(404, "Temp room not found")
+        raise HTTPException(404, "Temp room not found or access denied")
     extra = _parse_duration_ms(body.duration)
     new_expires = temp["expires_at"] + extra
     await temprooms_col().update_one(
@@ -108,9 +111,9 @@ async def terminate_temp_room(
     temp_id: str,
     current_user: dict = Depends(get_current_user),
 ):
-    temp = await temprooms_col().find_one({"_id": str_to_oid(temp_id)})
+    temp = await temprooms_col().find_one({"_id": str_to_oid(temp_id), "org_id": current_user["org_id"]})
     if not temp:
-        raise HTTPException(404, "Temp room not found")
+        raise HTTPException(404, "Temp room not found or access denied")
     now = int(time.time() * 1000)
     await temprooms_col().update_one(
         {"_id": str_to_oid(temp_id)},

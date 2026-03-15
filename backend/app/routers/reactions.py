@@ -14,14 +14,15 @@ async def toggle_reaction(
     body: ReactionToggle,
     current_user: dict = Depends(get_current_user),
 ):
-    msg = await messages_col().find_one({"_id": str_to_oid(message_id)})
+    msg = await messages_col().find_one({"_id": str_to_oid(message_id), "org_id": current_user["org_id"]})
     if not msg:
-        raise HTTPException(404, "Message not found")
+        raise HTTPException(404, "Message not found or access denied")
 
     existing = await reactions_col().find_one({"message_id": message_id})
     if not existing:
         await reactions_col().insert_one({
             "message_id": message_id,
+            "org_id": current_user["org_id"],
             "reactions": {body.emoji: [current_user["name"]]},
         })
         return {"message_id": message_id, "reactions": {body.emoji: [current_user["name"]]}}
@@ -44,6 +45,10 @@ async def toggle_reaction(
 
 @router.get("/")
 async def get_reactions(message_id: str, current_user: dict = Depends(get_current_user)):
+    msg = await messages_col().find_one({"_id": str_to_oid(message_id), "org_id": current_user["org_id"]})
+    if not msg:
+        raise HTTPException(404, "Message not found or access denied")
+
     doc = await reactions_col().find_one({"message_id": message_id})
     if not doc:
         return {"message_id": message_id, "reactions": {}}

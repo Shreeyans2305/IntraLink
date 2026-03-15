@@ -12,7 +12,7 @@ router = APIRouter(prefix="/presence", tags=["presence"])
 
 @router.get("/")
 async def get_all_presences(current_user: dict = Depends(get_current_user)):
-    cursor = users_col().find({}, {"_id": 1, "name": 1, "status": 1, "custom_status": 1})
+    cursor = users_col().find({"org_id": current_user["org_id"]}, {"_id": 1, "name": 1, "status": 1, "custom_status": 1})
     users = []
     async for u in cursor:
         users.append({

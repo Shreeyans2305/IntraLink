@@ -31,23 +31,19 @@ async def _write_audit(user_id: str, email: str, action: str):
 
 @router.post("/register", status_code=201)
 async def register(body: RegisterRequest):
-    # Org must exist before any user can self-register. Since it's a single-org platform, auto-assign to the first.
-    org = await org_col().find_one({})
+    # Require org_id in request
+    if not hasattr(body, "org_id") or not body.org_id:
+        raise HTTPException(status_code=400, detail="org_id required")
+
+    org = await org_col().find_one({"_id": str_to_oid(body.org_id)})
     if not org:
-        raise HTTPException(
-            status_code=400,
-            detail="No organisation exists. Please complete setup first.",
-        )
+        raise HTTPException(status_code=400, detail="Organization does not exist.")
 
-    # Email must be on the whitelist for this org
-    whitelist_entry = await whitelists_col().find_one({"email": body.email.lower()})
+    whitelist_entry = await whitelists_col().find_one({"email": body.email.lower(), "org_id": body.org_id})
     if not whitelist_entry:
-        raise HTTPException(
-            status_code=403,
-            detail="You are not whitelisted for this organisation. Contact your administrator.",
-        )
+        raise HTTPException(status_code=403, detail="You are not whitelisted for this organization.")
 
-    existing = await users_col().find_one({"email": body.email})
+    existing = await users_col().find_one({"email": body.email, "org_id": body.org_id})
     if existing:
         raise HTTPException(status_code=400, detail="Email already registered")
 
@@ -55,7 +51,8 @@ async def register(body: RegisterRequest):
         "name": body.name,
         "email": body.email,
         "hashed_password": hash_password(body.password),
-        "org_role": whitelist_entry["org_role"],  # role comes from the whitelist
+        "org_role": whitelist_entry["org_role"],
+        "org_id": body.org_id,
         "status": "Active",
         "custom_status": "",
         "created_at": int(time.time() * 1000),
@@ -63,10 +60,9 @@ async def register(body: RegisterRequest):
     result = await users_col().insert_one(doc)
     user_id = str(result.inserted_id)
 
-    # Consume the whitelist entry so it can't be reused
-    await whitelists_col().delete_one({"email": body.email.lower()})
+    await whitelists_col().delete_one({"email": body.email.lower(), "org_id": body.org_id})
 
-    token = create_access_token({"sub": user_id})
+    token = create_access_token({"sub": user_id, "org": body.org_id})
     doc["_id"] = result.inserted_id
     await _write_audit(user_id, body.email, "register")
     return {"token": token, "user": _safe_user(doc)}
@@ -74,12 +70,16 @@ async def register(body: RegisterRequest):
 
 @router.post("/login")
 async def login(body: LoginRequest):
-    user = await users_col().find_one({"email": body.email})
+    # Require org_id in request
+    if not hasattr(body, "org_id") or not body.org_id:
+        raise HTTPException(status_code=400, detail="org_id required")
+
+    user = await users_col().find_one({"email": body.email, "org_id": body.org_id})
     if not user or not verify_password(body.password, user["hashed_password"]):
         raise HTTPException(status_code=401, detail="Invalid credentials")
 
     user_id = str(user["_id"])
-    token = create_access_token({"sub": user_id})
+    token = create_access_token({"sub": user_id, "org": body.org_id})
     await _write_audit(user_id, body.email, "login")
     return {"token": token, "user": _safe_user(user)}
 

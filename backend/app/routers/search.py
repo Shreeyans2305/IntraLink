@@ -18,13 +18,18 @@ async def search(
     # Rooms
     if current_user["org_role"] == "admin":
         room_cursor = rooms_col().find(
-            {"archived": {"$ne": True}, "name": {"$regex": query_lower, "$options": "i"}},
+            {
+                "archived": {"$ne": True}, 
+                "org_id": current_user["org_id"],
+                "name": {"$regex": query_lower, "$options": "i"}
+            },
             {"name": 1, "type": 1}
         ).limit(10)
     else:
         room_cursor = rooms_col().find(
             {
                 "archived": {"$ne": True},
+                "org_id": current_user["org_id"],
                 "members.user_id": current_user["id"],
                 "name": {"$regex": query_lower, "$options": "i"},
             },
@@ -42,7 +47,10 @@ async def search(
 
     # Messages (text search)
     msg_cursor = messages_col().find(
-        {"text": {"$regex": query_lower, "$options": "i"}},
+        {
+            "text": {"$regex": query_lower, "$options": "i"},
+            "org_id": current_user["org_id"]
+        },
         {"text": 1, "room_id": 1, "author_name": 1}
     ).limit(10)
     async for msg in msg_cursor:
@@ -56,7 +64,10 @@ async def search(
 
     # People
     people_cursor = users_col().find(
-        {"name": {"$regex": query_lower, "$options": "i"}},
+        {
+            "name": {"$regex": query_lower, "$options": "i"},
+            "org_id": current_user["org_id"]
+        },
         {"name": 1, "org_role": 1, "status": 1}
     ).limit(10)
     async for person in people_cursor:

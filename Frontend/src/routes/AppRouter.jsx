@@ -4,6 +4,7 @@ import ProtectedRoute from './ProtectedRoute'
 import LoginPage from '../pages/auth/LoginPage'
 import RegisterPage from '../pages/auth/RegisterPage'
 import ChatPage from '../pages/chat/ChatPage'
+import LandingPage from '../pages/LandingPage'
 import DashboardPage from '../pages/admin/DashboardPage'
 import ModerationPage from '../pages/admin/ModerationPage'
 import AuditLogPage from '../pages/admin/AuditLogPage'
@@ -17,7 +18,7 @@ import ManagerDashboardPage from '../pages/manager/ManagerDashboardPage'
 function AppRouter() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/chat" replace />} />
+      <Route path="/" element={<LandingPage />} />
       <Route path="/setup" element={<SetupPage />} />
       <Route path="/login" element={<LoginPage />} />
       <Route path="/register" element={<RegisterPage />} />

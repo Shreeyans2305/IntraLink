@@ -12,9 +12,9 @@ router = APIRouter(prefix="/messages/{message_id}/threads", tags=["threads"])
 
 @router.get("/")
 async def get_thread(message_id: str, current_user: dict = Depends(get_current_user)):
-    msg = await messages_col().find_one({"_id": str_to_oid(message_id)})
+    msg = await messages_col().find_one({"_id": str_to_oid(message_id), "org_id": current_user["org_id"]})
     if not msg:
-        raise HTTPException(404, "Message not found")
+        raise HTTPException(404, "Message not found or access denied")
     cursor = threads_col().find({"parent_message_id": message_id}).sort("_id", 1)
     replies = [doc_to_dict(r) async for r in cursor]
     return replies
@@ -26,13 +26,14 @@ async def post_reply(
     body: ThreadReplyCreate,
     current_user: dict = Depends(get_current_user),
 ):
-    msg = await messages_col().find_one({"_id": str_to_oid(message_id)})
+    msg = await messages_col().find_one({"_id": str_to_oid(message_id), "org_id": current_user["org_id"]})
     if not msg:
-        raise HTTPException(404, "Parent message not found")
+        raise HTTPException(404, "Parent message not found or access denied")
 
     doc = {
         "parent_message_id": message_id,
         "room_id": msg.get("room_id"),
+        "org_id": current_user["org_id"],
         "text": body.text,
         "author_id": current_user["id"],
         "author_name": current_user["name"],

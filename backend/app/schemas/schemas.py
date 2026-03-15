@@ -28,6 +28,7 @@ class RegisterRequest(BaseModel):
 class LoginRequest(BaseModel):
     email: EmailStr
     password: str
+    org_id: str
 
 class TokenResponse(BaseModel):
     token: str

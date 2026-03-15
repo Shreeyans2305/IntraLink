@@ -14,9 +14,9 @@ router = APIRouter(prefix="/rooms/{room_id}/polls", tags=["polls"])
 async def _check_member_or_admin(room_id: str, user: dict):
     if user["org_role"] == "admin":
         return
-    room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
+    room = await rooms_col().find_one({"_id": str_to_oid(room_id), "org_id": user["org_id"]})
     if not room:
-        raise HTTPException(404, "Room not found")
+        raise HTTPException(404, "Room not found or access denied")
     ids = [m["user_id"] for m in room.get("members", [])]
     if user["id"] not in ids:
         raise HTTPException(403, "Not a member")
@@ -42,6 +42,7 @@ async def create_poll(
     ]
     doc = {
         "room_id": room_id,
+        "org_id": current_user["org_id"],
         "question": body.question,
         "options": options,
         "closed": False,

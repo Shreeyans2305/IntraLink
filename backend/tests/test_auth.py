@@ -36,7 +36,7 @@ async def test_org_setup_twice_returns_409(client):
 async def test_org_status_before_setup(client):
     resp = await client.get("/api/org/")
     assert resp.status_code == 200
-    assert resp.json()["exists"] is False
+    assert resp.json()["orgs"] == []
 
 
 @pytest.mark.asyncio
@@ -48,7 +48,7 @@ async def test_org_status_after_setup(client):
         "admin_password": "pass1234",
     })
     resp = await client.get("/api/org/")
-    assert resp.json()["exists"] is True
+    assert len(resp.json()["orgs"]) == 1
     assert resp.json()["orgs"][0]["name"] == "My Org"
 
 
@@ -151,9 +151,13 @@ async def test_register_whitelist_consumed(client, admin_token):
 
 @pytest.mark.asyncio
 async def test_login_success(client, admin_token):
+    org_resp = await client.get("/api/org/")
+    org_id = org_resp.json()["orgs"][0]["id"]
+    
     resp = await client.post("/api/auth/login", json={
         "email": "admin@test.com",
         "password": "test1234",
+        "org_id": org_id,
     })
     assert resp.status_code == 200
     assert "token" in resp.json()
@@ -161,9 +165,13 @@ async def test_login_success(client, admin_token):
 
 @pytest.mark.asyncio
 async def test_login_wrong_password(client, admin_token):
+    org_resp = await client.get("/api/org/")
+    org_id = org_resp.json()["orgs"][0]["id"]
+
     resp = await client.post("/api/auth/login", json={
         "email": "admin@test.com",
         "password": "wrong",
+        "org_id": org_id,
     })
     assert resp.status_code == 401
 

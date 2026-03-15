@@ -37,16 +37,21 @@ router = APIRouter(prefix="/admin", tags=["admin"])
 
 @router.get("/metrics")
 async def get_metrics(current_user: dict = Depends(get_admin_user)):
-    online_users = await users_col().count_documents({"status": {"$ne": "Offline"}})
-    total_rooms = await rooms_col().count_documents({"archived": {"$ne": True}})
-    temp_rooms = await temprooms_col().count_documents({"locked": {"$ne": True}})
+    online_users = await users_col().count_documents({"status": {"$ne": "Offline"}, "org_id": current_user["org_id"]})
+    total_rooms = await rooms_col().count_documents({"archived": {"$ne": True}, "org_id": current_user["org_id"]})
+    temp_rooms = await temprooms_col().count_documents({"locked": {"$ne": True}, "org_id": current_user["org_id"]})
 
     one_min_ago = int(time.time() * 1000) - 60_000
-    recent_msgs = await messages_col().count_documents({"timestamp": {"$gte": one_min_ago}})
+    recent_msgs = await messages_col().count_documents({"timestamp": {"$gte": one_min_ago}, "org_id": current_user["org_id"]})
+
+    # Note: messages might not have org_id yet, but they will.
+    # Wait, messages are in rooms, which are isolated. 
+    # But filtering by org_id is safe if we add it to messages too.
 
     day_ago = int(time.time() * 1000) - 86_400_000
     spam_alerts = await audit_col().count_documents({
         "anomaly": True,
+        "org_id": current_user["org_id"],
         "timestamp": {"$gte": day_ago},
     })
 
@@ -67,7 +72,7 @@ async def get_audit_log(
     skip: int = Query(0, ge=0),
     current_user: dict = Depends(get_admin_user),
 ):
-    cursor = audit_col().find({}).sort("timestamp", -1).skip(skip).limit(limit)
+    cursor = audit_col().find({"org_id": current_user["org_id"]}).sort("timestamp", -1).skip(skip).limit(limit)
     return [doc_to_dict(log) async for log in cursor]
 
 
@@ -75,7 +80,7 @@ async def get_audit_log(
 
 @router.get("/moderation")
 async def get_moderation_queue(current_user: dict = Depends(get_admin_user)):
-    cursor = audit_col().find({"anomaly": True, "resolved": {"$ne": True}}).sort("timestamp", -1).limit(100)
+    cursor = audit_col().find({"anomaly": True, "resolved": {"$ne": True}, "org_id": current_user["org_id"]}).sort("timestamp", -1).limit(100)
     return [doc_to_dict(item) async for item in cursor]
 
 
@@ -96,7 +101,7 @@ async def resolve_moderation(
 
 @router.get("/users")
 async def list_users(current_user: dict = Depends(get_current_user)):
-    cursor = users_col().find({}, {"hashed_password": 0})
+    cursor = users_col().find({"org_id": current_user["org_id"]}, {"hashed_password": 0})
     users = []
     async for u in cursor:
         d = doc_to_dict(u)
@@ -121,6 +126,7 @@ async def update_user_role(
     await audit_col().insert_one({
         "user_id": current_user["id"],
         "user": current_user["email"],
+        "org_id": current_user["org_id"],
         "action": "permission_change",
         "detail": f"Changed {user_id} org_role to {body.org_role}",
         "timestamp": int(time.time() * 1000),
@@ -133,7 +139,7 @@ async def update_user_role(
 
 @router.get("/whitelist")
 async def list_whitelist(current_user: dict = Depends(get_admin_user)):
-    cursor = whitelists_col().find({})
+    cursor = whitelists_col().find({"org_id": current_user["org_id"]})
     return [doc_to_dict(wl) async for wl in cursor]
 
 
@@ -148,19 +154,26 @@ async def add_whitelist(
 
     email_lower = body.email.lower()
 
-    # Don't whitelist someone already registered
-    existing = await users_col().find_one({"email": email_lower})
+    # Don't whitelist someone already registered in this org
+    existing = await users_col().find_one({"email": email_lower, "org_id": current_user["org_id"]})
     if existing:
-        raise HTTPException(400, "User with this email is already registered")
+        raise HTTPException(400, "User with this email is already registered in this organization")
 
     await whitelists_col().update_one(
-        {"email": email_lower},
-        {"$set": {"email": email_lower, "org_role": body.org_role, "added_by": current_user["id"], "added_at": int(time.time() * 1000)}},
+        {"email": email_lower, "org_id": current_user["org_id"]},
+        {"$set": {
+            "email": email_lower, 
+            "org_role": body.org_role, 
+            "org_id": current_user["org_id"], 
+            "added_by": current_user["id"], 
+            "added_at": int(time.time() * 1000)
+        }},
         upsert=True,
     )
     await audit_col().insert_one({
         "user_id": current_user["id"],
         "user": current_user["email"],
+        "org_id": current_user["org_id"],
         "action": "whitelist_add",
         "detail": f"Whitelisted {email_lower} as {body.org_role}",
         "timestamp": int(time.time() * 1000),
@@ -197,6 +210,7 @@ async def toggle_lockdown(
     await audit_col().insert_one({
         "user_id": current_user["id"],
         "user": current_user["email"],
+        "org_id": current_user["org_id"],
         "action": "lockdown_activated" if body.active else "lockdown_deactivated",
         "detail": f"Lockdown {'enabled' if body.active else 'disabled'} by {current_user['email']}",
         "timestamp": int(time.time() * 1000),
@@ -214,10 +228,10 @@ async def blast(
 ):
     """Generate an encrypted blueprint of the org structure, then wipe all room data."""
     # 1. Collect blueprint
-    org = await org_col().find_one({})
+    org = await org_col().find_one({"_id": str_to_oid(current_user["org_id"])})
     org_name = org.get("name", "") if org else ""
 
-    rooms_cursor = rooms_col().find({"archived": {"$ne": True}})
+    rooms_cursor = rooms_col().find({"archived": {"$ne": True}, "org_id": current_user["org_id"]})
     rooms_data = []
     async for room in rooms_cursor:
         # Enrich members with email for portability
@@ -236,7 +250,7 @@ async def blast(
         })
 
     # Collect whitelist
-    whitelist_cursor = whitelists_col().find({})
+    whitelist_cursor = whitelists_col().find({"org_id": current_user["org_id"]})
     whitelist_data = [
         {"email": wl["email"], "org_role": wl["org_role"]}
         async for wl in whitelist_cursor
@@ -251,19 +265,20 @@ async def blast(
     # 2. Encrypt
     encrypted = encrypt_blueprint(blueprint, body.passphrase)
 
-    # 3. Wipe all room data (messages, threads, reactions, polls, temprooms, rooms)
-    await messages_col().delete_many({})
-    await threads_col().delete_many({})
-    await reactions_col().delete_many({})
-    await polls_col().delete_many({})
-    await temprooms_col().delete_many({})
-    await rooms_col().delete_many({})
+    # 3. Wipe all room data for this organization
+    await messages_col().delete_many({"org_id": current_user["org_id"]})
+    await threads_col().delete_many({"org_id": current_user["org_id"]})
+    await reactions_col().delete_many({"org_id": current_user["org_id"]})
+    await polls_col().delete_many({"org_id": current_user["org_id"]})
+    await temprooms_col().delete_many({"org_id": current_user["org_id"]})
+    await rooms_col().delete_many({"org_id": current_user["org_id"]})
 
     await audit_col().insert_one({
         "user_id": current_user["id"],
         "user": current_user["email"],
+        "org_id": current_user["org_id"],
         "action": "blast",
-        "detail": f"Blast executed by {current_user['email']} – all room data wiped",
+        "detail": f"Blast executed by {current_user['email']} – room data wiped for organization",
         "timestamp": int(time.time() * 1000),
         "anomaly": False,
     })
@@ -300,6 +315,7 @@ async def import_blueprint(
             "members": [],
             "pinned_message_ids": [],
             "created_by": current_user["id"],
+            "org_id": current_user["org_id"],
             "created_at": now,
         }
         # Match existing users by email and restore room memberships
@@ -329,8 +345,14 @@ async def import_blueprint(
                 wl_role = "room_manager"
                 
             await whitelists_col().update_one(
-                {"email": email},
-                {"$set": {"email": email, "org_role": wl_role, "added_by": current_user["id"], "added_at": now}},
+                {"email": email, "org_id": current_user["org_id"]},
+                {"$set": {
+                    "email": email, 
+                    "org_role": wl_role, 
+                    "org_id": current_user["org_id"], 
+                    "added_by": current_user["id"], 
+                    "added_at": now
+                }},
                 upsert=True,
             )
             restored_whitelists += 1
@@ -338,6 +360,7 @@ async def import_blueprint(
     await audit_col().insert_one({
         "user_id": current_user["id"],
         "user": current_user["email"],
+        "org_id": current_user["org_id"],
         "action": "blueprint_import",
         "detail": f"Blueprint imported: {created_rooms} rooms, {restored_whitelists} whitelist entries restored",
         "timestamp": now,

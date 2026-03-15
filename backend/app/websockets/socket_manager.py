@@ -116,6 +116,9 @@ async def connect(sid, environ, auth):
         return False
     user["id"] = str(user.pop("_id"))
     _register_sid(sid, user)
+    # Join organization room for scoped broadcasts (e.g. presence)
+    if "org_id" in user:
+        await sio.enter_room(sid, f"org_{user['org_id']}")
     await sio.emit("lockdown_status", {"active": _lockdown_active}, to=sid)
     return True
 
@@ -186,6 +189,7 @@ async def send_message(sid, data):
         "text": text,
         "author_id": user["id"],
         "author_name": user["name"],
+        "org_id": user["org_id"],
         "timestamp": now,
         "expires_at": data.get("expires_at"),
         "is_system": False,
@@ -254,6 +258,7 @@ async def send_whisper(sid, data):
         "text": text,
         "author_id": user["id"],
         "author_name": user["name"],
+        "org_id": user["org_id"],
         "target_username": target_username,
         "target_id": target_user_id,
         "timestamp": now,
@@ -442,7 +447,7 @@ async def presence_update(sid, data):
         "name": user["name"],
         "status": status,
         "custom_status": custom_status,
-    })  # broadcast to all connected clients
+    }, room=f"org_{user['org_id']}")  # broadcast only to organization
 
 
 # ── Poll Voting ───────────────────────────────────────────────────────────────

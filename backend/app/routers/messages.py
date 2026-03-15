@@ -15,9 +15,9 @@ router = APIRouter(prefix="/rooms/{room_id}/messages", tags=["messages"])
 async def _check_member(room_id: str, user: dict):
     if user["org_role"] == "admin":
         return
-    room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
+    room = await rooms_col().find_one({"_id": str_to_oid(room_id), "org_id": user["org_id"]})
     if not room:
-        raise HTTPException(404, "Room not found")
+        raise HTTPException(404, "Room not found or access denied")
     ids = [m["user_id"] for m in room.get("members", [])]
     if user["id"] not in ids:
         raise HTTPException(403, "Not a member of this room")
@@ -26,9 +26,9 @@ async def _check_member(room_id: str, user: dict):
 async def _check_not_muted(room_id: str, user: dict):
     if user["org_role"] == "admin":
         return
-    room = await rooms_col().find_one({"_id": str_to_oid(room_id)})
+    room = await rooms_col().find_one({"_id": str_to_oid(room_id), "org_id": user["org_id"]})
     if not room:
-        return
+        raise HTTPException(404, "Room not found or access denied")
     member = next((m for m in room.get("members", []) if m["user_id"] == user["id"]), None)
     if member and member.get("muted"):
         raise HTTPException(403, "You are muted in this room")
