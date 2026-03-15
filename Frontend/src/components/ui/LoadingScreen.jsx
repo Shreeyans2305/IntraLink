@@ -21,7 +21,7 @@ function LoadingScreen({
       <div className="flex w-full max-w-sm flex-col items-center px-6 text-center">
         <div className="loading-logo-orbit">
           <img
-            src="/logo.webp"
+            src="/LOGO.webp"
             alt="IntraLink loading"
             className="loading-logo-3d h-24 w-24 select-none object-contain"
           />

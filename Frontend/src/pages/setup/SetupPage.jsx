@@ -61,7 +61,7 @@ function SetupPage() {
       >
         <header className="mb-6 text-center">
           <div className="mx-auto mb-5 flex h-20 w-20 items-center justify-center rounded-2xl shadow-[0_0_30px_rgba(59,130,246,0.4)]">
-            <img src="/logo.webp" alt="IntraLink" className="h-20 w-20 rounded-2xl object-cover" />
+            <img src="/LOGO.webp" alt="IntraLink" className="h-20 w-20 rounded-2xl object-cover" />
           </div>
           <h1 className="text-3xl font-bold tracking-tight text-zinc-100">Initialize Workspace</h1>
           <p className="mt-2 text-sm text-zinc-400">

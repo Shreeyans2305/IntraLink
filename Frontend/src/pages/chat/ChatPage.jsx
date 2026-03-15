@@ -910,7 +910,7 @@ function ChatPage() {
       <header className="app-surface bg-zinc-900/20 flex items-center justify-between border-b border-zinc-800/80 px-4 py-3 shadow-[0_4px_30px_rgba(0,0,0,0.1)] backdrop-blur-md">
         <div className="flex items-center gap-3">
           <div className="flex items-center gap-2 rounded-xl border border-zinc-800/70 bg-zinc-900/40 px-2.5 py-1.5">
-            <img src="/logo.webp" alt="IntraLink" className="h-7 w-7 rounded-lg object-cover" />
+            <img src="/LOGO.webp" alt="IntraLink" className="h-7 w-7 rounded-lg object-cover" />
             <h1 className="text-lg font-bold tracking-tight text-zinc-100 text-shadow-sm shadow-brand-500/20">IntraLink</h1>
           </div>
           <div className="flex items-center gap-2 rounded-xl border border-zinc-800 bg-zinc-900/50 px-3 py-1.5 text-sm text-zinc-400 focus-within:border-brand-500/50 focus-within:ring-1 focus-within:ring-brand-500/50 transition-all">
