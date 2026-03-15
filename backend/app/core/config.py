@@ -16,6 +16,8 @@ class Settings(BaseSettings):
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 10080  # 7 days
     ALGORITHM: str = "HS256"
     CORS_ORIGINS: str = "http://localhost:5173,http://localhost:3000,https://localhost:5174"
+    PUBLIC_URL: str = ""           # e.g. https://intralink-f9yc.onrender.com — enables self-ping
+    SELF_PING_INTERVAL_SECONDS: int = 300  # 5 minutes
 
     @property
     def cors_origins_list(self) -> List[str]:
